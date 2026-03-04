@@ -1,0 +1,134 @@
+﻿<Page x:Class="WpfNastolSystem.Forms.List.MainMenu"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      mc:Ignorable="d" 
+      d:DesignHeight="800" d:DesignWidth="1200"
+      Title="Главное меню"
+      Background="#EEF6FF">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Border Grid.Column="0" 
+                Background="White" 
+                BorderBrush="{StaticResource BorderBlue}" 
+                BorderThickness="0,0,1,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,20,0,20">
+                    <TextBlock Text="НастолКлаб" 
+                               Style="{StaticResource PageTitleStyle}"
+                               Margin="16,0,16,30"
+                               FontSize="28"/>
+                    <Button Content="➕ Игры" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="games"
+                            Click="MenuButton_Click"/>
+                    <Button Content="👥 Пользователи" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="persons"
+                            Click="MenuButton_Click"/>
+                    <Button Content="🎲 Сессии" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="sessions"
+                            Click="MenuButton_Click"/>
+                    <Button Content="📋 Категории" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="categories"
+                            Click="MenuButton_Click"/>
+                    <Button Content="📦 Копии игр" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="game_copies"
+                            Click="MenuButton_Click"/>
+                    <Button Content="🪑 Столы" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="tables"
+                            Click="MenuButton_Click"/>
+                    <Button Content="👤 Аккаунты" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="accounts"
+                            Click="MenuButton_Click"/>
+                    <Button Content="🔑 Роли" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Tag="roles"
+                            Click="MenuButton_Click"/>
+                    <Separator Margin="16,20" Background="{StaticResource BorderBlue}"/>
+                    <Button Content="🚪 Выход" 
+                            Style="{StaticResource ModernMenuButtonStyle}"
+                            Background="#FF4444"
+                            Click="Logout_Click"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+        <Grid Grid.Column="1" Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="TitleTextBlock" 
+                       Text="Игры"
+                       Style="{StaticResource PageTitleStyle}"
+                       HorizontalAlignment="Left"
+                       Margin="0,0,0,20"/>
+            <Border Grid.Row="1" 
+                    Style="{StaticResource PanelStyle}"
+                    Padding="15"
+                    Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="SearchTextBox" 
+                             Style="{StaticResource SearchTextBoxStyle}"
+                             Grid.Column="0"
+                             Margin="0,0,10,0"
+                             TextChanged="SearchTextBox_TextChanged"/>
+                    <ComboBox x:Name="FilterComboBox" 
+                              Style="{StaticResource FilterComboBoxStyle}"
+                              Grid.Column="1"
+                              Margin="0,0,10,0"
+                              SelectionChanged="FilterComboBox_SelectionChanged"/>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <Button Content="➕ Добавить" 
+                                Style="{StaticResource CustomBlueButtonStyle}"
+                                Background="#28a745"
+                                BorderBrush="#28a745"
+                                Width="120"
+                                Margin="0,0,10,0"
+                                Click="AddButton_Click"/>
+                        <Button Content="🗑️ Удалить" 
+                                Style="{StaticResource CustomBlueButtonStyle}"
+                                Background="#dc3545"
+                                BorderBrush="#dc3545"
+                                Width="120"
+                                Click="DeleteButton_Click"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            <DataGrid x:Name="DataGrid"
+                      Grid.Row="2"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      MouseDoubleClick="DataGrid_MouseDoubleClick"
+                      Background="White"
+                      BorderBrush="{StaticResource BorderBlue}"
+                      BorderThickness="1"
+                      RowHeight="35"
+                      FontSize="13">
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="{StaticResource PrimaryLightBlue}"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Height" Value="40"/>
+                    </Style>
+                </DataGrid.Resources>
+            </DataGrid>
+        </Grid>
+    </Grid>
+</Page>
