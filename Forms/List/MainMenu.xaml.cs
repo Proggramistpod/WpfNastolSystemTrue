@@ -1,252 +1,250 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using WpfNastolSystem.Moduls.DB;
+using System.Windows.Input;
 using WpfNastolSystem.Forms.Edit;
+using WpfNastolSystem.Moduls.DB;
 
 namespace WpfNastolSystem.Forms.List
 {
     public partial class MainMenu : Page
     {
-        private DataBaseQuery dataBaseQuery = new DataBaseQuery();
-        private string currentTable = "games";
-        private DataTable currentData;
+        private readonly DataBaseQuery _db = new();
+        private DataTable? _currentData;
+        private string _currentTable = "games";
+
         public MainMenu()
         {
             InitializeComponent();
-            LoadData();
-            LoadFilterOptions();
+            InitializePage();
         }
+
+        private void InitializePage() => LoadTable("games");
+
+        private void ProfileButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Профиль");
+        private void SettingsButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Настройки");
+
+        #region Загрузка таблицы
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {
-            Button button = sender as Button;
-            currentTable = button.Tag.ToString();
-            TitleTextBlock.Text = GetRussianName(currentTable);
-            LoadData();
-            LoadFilterOptions();
+            if (sender is Button { Tag: string table })
+                LoadTable(table);
         }
+
+        private void LoadTable(string table)
+        {
+            _currentTable = table;
+            TitleTextBlock.Text = GetRussianName(table);
+            LoadData();
+            LoadFilters();
+        }
+
         private void LoadData()
         {
             try
             {
-                currentData = dataBaseQuery.GetTableData(currentTable);
-                DataGrid.ItemsSource = currentData.DefaultView;
-                DataGrid.Columns.Clear();
-                foreach (DataColumn column in currentData.Columns)
+                _currentData = _db.GetTableForGrid(_currentTable);
+                if (_currentData == null || _currentData.Rows.Count == 0)
                 {
-                    DataGrid.Columns.Add(new DataGridTextColumn
-                    {
-                        Header = GetRussianColumnName(column.ColumnName),
-                        Binding = new System.Windows.Data.Binding(column.ColumnName),
-                        Width = new DataGridLength(1, DataGridLengthUnitType.Auto)
-                    });
+                    DataGrid.ItemsSource = null;
+                    DataGrid.Columns.Clear();
+                    return;
                 }
+                DataGrid.ItemsSource = _currentData.DefaultView;
+                GenerateColumns(_currentData);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка загрузки данных: {ex.Message}");
+                ShowError("Ошибка загрузки данных", ex);
             }
         }
-        private void LoadFilterOptions()
+
+        private void GenerateColumns(DataTable table)
         {
-            FilterComboBox.Items.Clear();
-            FilterComboBox.Items.Add("Все");
-            switch (currentTable)
+            DataGrid.Columns.Clear();
+
+            // Колонки, которые не нужно показывать (ID и служебные даты)
+            var hiddenColumns = new HashSet<string>
             {
-                case "games":
-                    FilterComboBox.Items.Add("По году");
-                    FilterComboBox.Items.Add("По рейтингу");
-                    FilterComboBox.Items.Add("По количеству игроков");
-                    break;
-                case "persons":
-                    FilterComboBox.Items.Add("Активные");
-                    FilterComboBox.Items.Add("Забаненные");
-                    break;
-                case "sessions":
-                    FilterComboBox.Items.Add("Активные");
-                    FilterComboBox.Items.Add("Завершенные");
-                    break;
+                "game_id", "person_id", "session_id", "category_id", "copy_id", "table_id", "account_id", "role_id",
+                "last_login", "created_at", "registered_at"
+            };
+
+            foreach (DataColumn column in table.Columns)
+            {
+                if (hiddenColumns.Contains(column.ColumnName))
+                    continue;
+
+                DataGrid.Columns.Add(new DataGridTextColumn
+                {
+                    Header = GetRussianColumnName(column.ColumnName),
+                    Binding = new System.Windows.Data.Binding(column.ColumnName),
+                    Width = new DataGridLength(1, DataGridLengthUnitType.Auto)
+                });
             }
+        }
+        #endregion
+
+        #region Фильтрация и поиск
+        private void LoadFilters()
+        {
+            FilterComboBox.ItemsSource = GetFilterOptions(_currentTable);
             FilterComboBox.SelectedIndex = 0;
         }
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            ApplyFilter();
-        }
-        private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ApplyFilter();
-        }
+
+        private List<string> GetFilterOptions(string table) =>
+            table switch
+            {
+                "games" => new() { "Все", "По году", "По рейтингу", "По количеству игроков" },
+                "persons" => new() { "Все", "Активные", "Забаненные" },
+                "sessions" => new() { "Все", "Активные", "Завершенные" },
+                _ => new() { "Все" }
+            };
+
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
+        private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyFilter();
+
         private void ApplyFilter()
         {
-            if (currentData == null) return;
-            string searchText = SearchTextBox.Text.ToLower();
-            string filterOption = FilterComboBox.SelectedItem?.ToString() ?? "Все";
-            DataView view = currentData.DefaultView;
-            view.RowFilter = "";
-            if (!string.IsNullOrWhiteSpace(searchText))
+            if (_currentData == null) return;
+            var view = _currentData.DefaultView;
+            string search = SearchTextBox.Text?.Trim() ?? "";
+            string selectedFilter = FilterComboBox.SelectedItem?.ToString() ?? "Все";
+
+            var filters = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(search))
             {
-                string filter = "";
-                foreach (DataColumn column in currentData.Columns)
-                {
-                    if (column.DataType == typeof(string))
-                    {
-                        if (!string.IsNullOrEmpty(filter))
-                            filter += " OR ";
-                        filter += $"CONVERT([{column.ColumnName}], 'System.String') LIKE '%{searchText}%'";
-                    }
-                }
-                view.RowFilter = filter;
+                var escapedSearch = search.Replace("'", "''");
+                var stringColumns = _currentData.Columns
+                    .Cast<DataColumn>()
+                    .Where(c => c.DataType == typeof(string))
+                    .Select(c => $"[{c.ColumnName}] LIKE '%{escapedSearch}%'");
+                filters.Add("(" + string.Join(" OR ", stringColumns) + ")");
             }
-            if (filterOption != "Все")
-            {
-                switch (currentTable)
-                {
-                    case "sessions":
-                        if (filterOption == "Активные")
-                            view.RowFilter += (string.IsNullOrEmpty(view.RowFilter) ? "" : " AND ") + "ended_at IS NULL";
-                        else if (filterOption == "Завершенные")
-                            view.RowFilter += (string.IsNullOrEmpty(view.RowFilter) ? "" : " AND ") + "ended_at IS NOT NULL";
-                        break;
-                }
-            }
+
+            string? additional = GetAdditionalFilter(selectedFilter);
+            if (!string.IsNullOrEmpty(additional))
+                filters.Add(additional);
+
+            view.RowFilter = string.Join(" AND ", filters);
         }
-        private void AddButton_Click(object sender, RoutedEventArgs e)
+
+        private string? GetAdditionalFilter(string filter) =>
+            _currentTable switch
+            {
+                "sessions" when filter == "Активные" => "ended_at IS NULL",
+                "sessions" when filter == "Завершенные" => "ended_at IS NOT NULL",
+                _ => null
+            };
+        #endregion
+
+        #region CRUD
+        private void AddButton_Click(object sender, RoutedEventArgs e) => OpenEditWindow(null);
+
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
+            if (DataGrid.SelectedItem is not DataRowView row)
+            {
+                MessageBox.Show("Выберите запись для удаления",
+                    "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            if (MessageBox.Show("Удалить запись?",
+                "Подтверждение",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            string? idColumn = GetIdColumnName(_currentTable);
+            if (idColumn == null) return;
+
+            if (!int.TryParse(row.Row[idColumn]?.ToString(), out int id))
+                return;
+
             try
             {
-                Window editWindow = GetEditWindow(currentTable, null);
-                if (editWindow != null)
-                {
-                    editWindow.Owner = Window.GetWindow(this);
-                    editWindow.ShowDialog();
-                    LoadData();
-                }
+                _db.DeleteRecord(_currentTable, id);
+                LoadData();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Ошибка: {ex.Message}");
+                ShowError("Ошибка удаления", ex);
             }
         }
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+
+        private void DataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (DataGrid.SelectedItem == null)
+            if (DataGrid.SelectedItem is not DataRowView row)
+                return;
+
+            string? idColumn = GetIdColumnName(_currentTable);
+            if (idColumn == null) return;
+
+            if (!int.TryParse(row.Row[idColumn]?.ToString(), out int id))
+                return;
+
+            OpenEditWindow(id);
+        }
+
+        private void OpenEditWindow(int? id)
+        {
+            Window? window = GetEditWindow(_currentTable, id);
+            if (window == null)
             {
-                MessageBox.Show("Выберите запись для удаления");
+                MessageBox.Show($"Окно редактирования для таблицы '{_currentTable}' не реализовано.",
+                                "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
             }
-            if (MessageBox.Show("Вы уверены, что хотите удалить эту запись?",
-                "Подтверждение", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                try
-                {
-                    DataRowView row = DataGrid.SelectedItem as DataRowView;
-                    string idColumn = GetIdColumnName(currentTable);
-                    if (row != null && idColumn != null)
-                    {
-                        int id = Convert.ToInt32(row[idColumn]);
-                        dataBaseQuery.DeleteRecord(currentTable, idColumn, id);
-                        LoadData();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"Ошибка при удалении: {ex.Message}");
-                }
-            }
+
+            window.Owner = Window.GetWindow(this);
+            window.ShowDialog();
+            LoadData();
         }
-        private void DataGrid_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        #endregion
+
+        #region Вспомогательные методы
+        private void Logout_Click(object sender, RoutedEventArgs e)
         {
-            if (DataGrid.SelectedItem != null)
-            {
-                DataRowView row = DataGrid.SelectedItem as DataRowView;
-                string idColumn = GetIdColumnName(currentTable);
-                if (row != null && idColumn != null)
-                {
-                    int id = Convert.ToInt32(row[idColumn]);
-                    Window editWindow = GetEditWindow(currentTable, id);
-                    if (editWindow != null)
-                    {
-                        editWindow.Owner = Window.GetWindow(this);
-                        editWindow.ShowDialog();
-                        LoadData();
-                    }
-                }
-            }
+            if (MessageBox.Show("Выйти из системы?",
+                "Подтверждение",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) != MessageBoxResult.Yes)
+                return;
+
+            var loginWindow = new MainWindow();
+            loginWindow.Show();
+            Window.GetWindow(this)?.Close();
         }
-        private Window GetEditWindow(string table, int? id)
+
+        private void ShowError(string title, Exception ex)
         {
-            switch (table)
-            {
-                case "games":
-                    return new GameEditWindow(id);
-                //case "persons":
-                //    return new PersonEditWindow(id);
-                //case "sessions":
-                //    return new SessionEditWindow(id);
-                //case "categories":
-                //    return new CategoryEditWindow(id);
-                //case "game_copies":
-                //    return new GameCopyEditWindow(id);
-                //case "tables":
-                //    return new TableEditWindow(id);
-                //case "accounts":
-                //    return new AccountEditWindow(id);
-                //case "roles":
-                //    return new RoleEditWindow(id);
-                default:
-                    return null;
-            }
+            MessageBox.Show($"{title}: {ex.Message}",
+                "Ошибка",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
-        private string GetRussianName(string table)
-        {
-            return table switch
+
+        private Window? GetEditWindow(string table, int? id) =>
+            table switch
             {
-                "games" => "Игры",
-                "persons" => "Пользователи",
-                "sessions" => "Сессии",
-                "categories" => "Категории",
-                "game_copies" => "Копии игр",
-                "tables" => "Столы",
-                "accounts" => "Аккаунты",
-                "roles" => "Роли",
-                _ => table
+                "games" => new GameEditWindow(id),
+                //"persons" => new PersonEditWindow(id),
+                //"sessions" => new SessionEditWindow(id),
+                //"categories" => new CategoryEditWindow(id),
+                //"game_copies" => new GameCopyEditWindow(id),
+                //"tables" => new TableEditWindow(id),
+                //"accounts" => new AccountEditWindow(id),
+                //"roles" => new RoleEditWindow(id),
+                _ => null
             };
-        }
-        private string GetRussianColumnName(string column)
-        {
-            return column switch
-            {
-                "game_id" => "ID",
-                "title" => "Название",
-                "description" => "Описание",
-                "publish_year" => "Год",
-                "publisher" => "Издатель",
-                "min_players" => "Мин. игроков",
-                "max_players" => "Макс. игроков",
-                "play_time_min" => "Время игры",
-                "age_rating" => "Возраст",
-                "bgg_rating" => "Рейтинг",
-                "person_id" => "ID пользователя",
-                "full_name" => "ФИО",
-                "phone" => "Телефон",
-                "email" => "Email",
-                "birth_date" => "Дата рождения",
-                "registered_at" => "Дата регистрации",
-                "is_banned" => "Забанен",
-                "session_id" => "ID сессии",
-                "started_at" => "Начало",
-                "ended_at" => "Конец",
-                "cost" => "Стоимость",
-                "paid" => "Оплачено",
-                _ => column
-            };
-        }
-        private string GetIdColumnName(string table)
-        {
-            return table switch
+
+        private string? GetIdColumnName(string table) =>
+            table switch
             {
                 "games" => "game_id",
                 "persons" => "person_id",
@@ -258,14 +256,78 @@ namespace WpfNastolSystem.Forms.List
                 "roles" => "role_id",
                 _ => null
             };
-        }
-        private void Logout_Click(object sender, RoutedEventArgs e)
-        {
-            if (MessageBox.Show("Выйти из системы?", "Подтверждение",
-                MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+
+        private string GetRussianName(string table) =>
+            table switch
             {
-                NavigationService.Navigate(new Uri("MainWindow.xaml", UriKind.Relative));
-            }
-        }
+                "games" => "Игры",
+                "persons" => "Пользователи",
+                "sessions" => "Сессии",
+                "categories" => "Категории",
+                "game_copies" => "Копии игр",
+                "tables" => "Столы",
+                "accounts" => "Аккаунты",
+                "roles" => "Роли",
+                _ => table
+            };
+
+        // Переводы только для отображаемых колонок
+        private string GetRussianColumnName(string column) =>
+            column switch
+            {
+                // Games
+                "title" => "Название",
+                "publish_year" => "Год выпуска",
+                "publisher" => "Издатель",
+                "min_players" => "Мин. игроков",
+                "max_players" => "Макс. игроков",
+                "play_time_min" => "Время (мин)",
+                "age_rating" => "Возраст",
+                "bgg_rating" => "Рейтинг BGG",
+                "is_active" => "Активна",
+                "description" => "Описание",
+
+                // Persons
+                "full_name" => "ФИО",
+                "role_name" => "Роль",
+                "phone" => "Телефон",
+                "email" => "Email",
+                "birth_date" => "Дата рождения",
+                "is_banned" => "Заблокирован",
+                "notes" => "Примечания",
+
+                // Sessions
+                "organizer_name" => "Организатор",
+                "table_number" => "Стол",
+                "game_title" => "Игра",
+                "started_at" => "Начало",
+                "ended_at" => "Окончание",
+                "comment" => "Комментарий",
+
+                // Categories
+                "name" => "Название",
+
+                // Game copies
+                "inventory_number" => "Инв. номер",
+                "acquired_date" => "Дата приобретения",
+                "Condition" => "Состояние",
+                "location" => "Расположение",
+                "is_available" => "Доступность",
+
+                // Tables
+                "capacity" => "Вместимость",
+                "zone" => "Зона",
+
+                // Accounts
+                "login" => "Логин",
+                "person_name" => "Владелец",
+
+                // Roles
+                "code" => "Код",
+
+                // Если колонка не найдена
+                _ => column
+            };
+        #endregion
     }
 }

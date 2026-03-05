@@ -16,8 +16,9 @@ namespace WpfNastolSystem
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string? foundUser = dataBaseQuery.AtorizationUser(InputLogin.Text, InputPassword.Password).ToString();
-            if (foundUser != null)
+            string? foundUser = dataBaseQuery.AuthorizationUser(InputLogin.Text, InputPassword.Password);
+
+            if (!string.IsNullOrEmpty(foundUser))
             {
                 this.Content = new MainMenu();
                 this.Title = "Настольная система";
@@ -25,7 +26,9 @@ namespace WpfNastolSystem
                 this.ResizeMode = ResizeMode.CanResize;
             }
             else
-                MessageBox.Show("Пароль не вереный");
+            {
+                MessageBox.Show("Неверный логин или пароль");
+            }
         }
     }
 }
