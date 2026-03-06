@@ -32,7 +32,7 @@
                     <TextBlock x:Name="HintTitle"
                                Text="Название игры"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
-                               IsHitTestVisible="False">
+                               IsHitTestVisible="False" Height="42">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="TitleTransform"/>
                         </TextBlock.RenderTransform>
@@ -43,16 +43,16 @@
                              Background="Transparent"
                              BorderThickness="0"
                              VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Описание -->
-                <Grid Height="110" Margin="0,0,0,16">
+                <Grid Height="99" Margin="0,0,0,18">
                     <Border x:Name="DescriptionBorder" Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintDescription"
                                Text="Описание"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
-                               IsHitTestVisible="False">
+                               IsHitTestVisible="False" Margin="0,6,0,0" VerticalAlignment="Top">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="DescriptionTransform"/>
                         </TextBlock.RenderTransform>
@@ -66,7 +66,7 @@
                              TextWrapping="Wrap"
                              AcceptsReturn="True"
                              AcceptsTab="True"
-                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Год + Издатель -->
@@ -94,7 +94,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                     </Grid>
 
                     <!-- Издатель -->
@@ -114,7 +114,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                     </Grid>
                 </Grid>
 
@@ -153,7 +153,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                     </Grid>
 
                     <Grid Grid.Column="2" Height="62">
@@ -172,7 +172,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,9"/>
                     </Grid>
                 </Grid>
 
@@ -200,7 +200,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                     </Grid>
 
                     <Grid Grid.Column="2" Height="62">
@@ -219,7 +219,7 @@
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                     </Grid>
                 </Grid>
 
@@ -240,7 +240,7 @@
                              Background="Transparent"
                              BorderThickness="0"
                              VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,9"/>
                 </Grid>
 
             </StackPanel>

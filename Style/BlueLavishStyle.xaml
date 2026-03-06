@@ -209,7 +209,6 @@
 
     <Style x:Key="FilterComboBoxStyle" TargetType="ComboBox">
         <Setter Property="Height" Value="40"/>
-        <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="FontSize" Value="14"/>
         <Setter Property="Background" Value="White"/>
         <Setter Property="BorderBrush" Value="{StaticResource BorderBlue}"/>
@@ -217,34 +216,40 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
-                    <Border x:Name="border" 
-                            Background="{TemplateBinding Background}" 
-                            BorderBrush="{TemplateBinding BorderBrush}" 
-                            BorderThickness="{TemplateBinding BorderThickness}" 
-                            CornerRadius="6">
-                        <Grid>
-                            <ToggleButton x:Name="toggleButton" 
-                                          Background="Transparent" 
-                                          BorderThickness="0"/>
-                            <ContentPresenter x:Name="contentPresenter" 
-                                              HorizontalAlignment="Left" 
-                                              VerticalAlignment="Center" 
-                                              Margin="12,0"/>
-                            <Popup x:Name="PART_Popup" 
-                                   AllowsTransparency="True" 
-                                   Placement="Bottom">
-                                <Border Background="White" 
-                                        BorderBrush="{StaticResource BorderBlue}" 
-                                        BorderThickness="1" 
-                                        CornerRadius="6" 
-                                        Padding="4">
-                                    <ScrollViewer>
-                                        <ItemsPresenter/>
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                    </Border>
+                    <Grid>
+                        <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"/>
+
+                        <ToggleButton
+                        IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}"
+                        Background="Transparent"
+                        BorderThickness="0"/>
+
+                        <ContentPresenter
+                        Margin="12,0,30,0"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                        Content="{TemplateBinding SelectionBoxItem}"/>
+
+                        <Popup x:Name="PART_Popup"
+                           Placement="Bottom"
+                           IsOpen="{TemplateBinding IsDropDownOpen}"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           PopupAnimation="Slide">
+                            <Border Background="White"
+                                BorderBrush="{StaticResource BorderBlue}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                                <ScrollViewer>
+                                    <ItemsPresenter/>
+                                </ScrollViewer>
+                            </Border>
+                        </Popup>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

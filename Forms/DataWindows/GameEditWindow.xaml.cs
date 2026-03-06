@@ -13,6 +13,16 @@ namespace WpfNastolSystem.Forms.Edit
         private readonly DataBaseQuery _db = new();
         private readonly int? _gameId;
 
+        // Вложенный класс для элементов ComboBox категорий
+        public class CategoryItem
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+
+            // Переопределяем ToString, чтобы избежать вывода { Id = 1, Name = ... }
+            public override string ToString() => Name ?? "(без названия)";
+        }
+
         public GameEditWindow(int? id = null)
         {
             InitializeComponent();
@@ -33,7 +43,6 @@ namespace WpfNastolSystem.Forms.Edit
         private void ConfigureWindow()
         {
             bool editMode = _gameId.HasValue;
-
             Title = editMode ? "Редактирование игры" : "Добавление игры";
             TitleText.Text = Title;
         }
@@ -61,41 +70,35 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 var table = _db.GetAllCategories();
 
-                // Отладка: покажем названия колонок и первую запись
-                string cols = string.Join(", ", table.Columns.Cast<DataColumn>().Select(c => c.ColumnName));
-                string firstRow = "";
-                if (table.Rows.Count > 0)
+                if (table == null || table.Rows.Count == 0)
                 {
-                    var row = table.Rows[0];
-                    firstRow = $"Первая запись: {row[0]} / {row[1]}";
-                }
-                MessageBox.Show($"Колонки: {cols}\nКоличество строк: {table.Rows.Count}\n{firstRow}");
-
-                if (table.Rows.Count == 0)
-                {
-                    MessageBox.Show("Нет категорий");
+                    MessageBox.Show("В таблице categories нет записей.");
                     CategoryComboBox.IsEnabled = false;
                     return;
                 }
 
-                // Привязка через анонимные объекты – самый надёжный способ
-                var items = new List<dynamic>();
+                var items = new List<CategoryItem>();
+
                 foreach (DataRow row in table.Rows)
                 {
-                    items.Add(new
+                    items.Add(new CategoryItem
                     {
-                        Id = row[0],      // или row["category_id"]
-                        Name = row[1]     // или row["name"]
+                        Id = Convert.ToInt32(row["category_id"]),
+                        Name = row["name"]?.ToString() ?? "(без названия)"
                     });
                 }
 
                 CategoryComboBox.ItemsSource = items;
-                CategoryComboBox.DisplayMemberPath = "Name";
-                CategoryComboBox.SelectedValuePath = "Id";
+                CategoryComboBox.DisplayMemberPath = nameof(CategoryItem.Name);
+                CategoryComboBox.SelectedValuePath = nameof(CategoryItem.Id);
+
+                // Если нужно, чтобы при добавлении новой игры ничего не было выбрано по умолчанию
+                // CategoryComboBox.SelectedIndex = -1;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка: " + ex.Message);
+                MessageBox.Show("Ошибка при загрузке категорий:\n" + ex.Message);
+                CategoryComboBox.IsEnabled = false;
             }
         }
 
@@ -119,7 +122,9 @@ namespace WpfNastolSystem.Forms.Edit
                 SetText(BggRatingTextBox, row["bgg_rating"]);
 
                 if (row["category_id"] != DBNull.Value)
-                    CategoryComboBox.SelectedValue = row["category_id"];
+                {
+                    CategoryComboBox.SelectedValue = Convert.ToInt32(row["category_id"]);
+                }
             }
             catch (Exception ex)
             {
@@ -129,7 +134,7 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void SetText(System.Windows.Controls.TextBox box, object value)
         {
-            box.Text = value == DBNull.Value ? "" : value.ToString();
+            box.Text = value == DBNull.Value || value == null ? "" : value.ToString();
         }
 
         #endregion
@@ -166,19 +171,19 @@ namespace WpfNastolSystem.Forms.Edit
 
         private bool TryValidate(out Dictionary<string, object> parameters)
         {
-            parameters = new();
+            parameters = new Dictionary<string, object>();
 
             if (string.IsNullOrWhiteSpace(TitleTextBox.Text))
                 return Fail("Введите название игры", TitleTextBox);
 
             if (!TryParseInt(YearTextBox.Text, 1900, DateTime.Now.Year + 2, out int year))
-                return Fail("Некорректный год", YearTextBox);
+                return Fail("Некорректный год выпуска", YearTextBox);
 
             if (!TryParseInt(MinPlayersTextBox.Text, 1, 20, out int min))
                 return Fail("Мин. игроков: 1–20", MinPlayersTextBox);
 
             if (!TryParseInt(MaxPlayersTextBox.Text, min, 50, out int max))
-                return Fail($"Макс. игроков ≥ {min} и ≤ 50", MaxPlayersTextBox);
+                return Fail($"Макс. игроков должно быть ≥ {min} и ≤ 50", MaxPlayersTextBox);
 
             if (!TryParseInt(PlayTimeTextBox.Text, 5, 1440, out int time))
                 return Fail("Время игры: 5–1440 минут", PlayTimeTextBox);
@@ -187,7 +192,7 @@ namespace WpfNastolSystem.Forms.Edit
                 return Fail("Возраст: 3–99", AgeRatingTextBox);
 
             if (!TryParseDecimal(BggRatingTextBox.Text, 0, 10, out decimal rating))
-                return Fail("Рейтинг: 0–10", BggRatingTextBox);
+                return Fail("Рейтинг BGG: 0.0–10.0", BggRatingTextBox);
 
             if (CategoryComboBox.SelectedValue == null)
                 return Fail("Выберите категорию", CategoryComboBox);
@@ -198,12 +203,12 @@ namespace WpfNastolSystem.Forms.Edit
                 ["@description"] = string.IsNullOrWhiteSpace(DescriptionTextBox.Text) ? DBNull.Value : DescriptionTextBox.Text.Trim(),
                 ["@publish_year"] = year,
                 ["@publisher"] = PublisherTextBox.Text.Trim(),
-                ["@category_id"] = CategoryComboBox.SelectedValue,
                 ["@min_players"] = min,
                 ["@max_players"] = max,
                 ["@play_time_min"] = time,
                 ["@age_rating"] = age,
-                ["@bgg_rating"] = rating
+                ["@bgg_rating"] = rating,
+                ["@category_id"] = CategoryComboBox.SelectedValue
             };
 
             return true;
@@ -215,26 +220,34 @@ namespace WpfNastolSystem.Forms.Edit
 
         private bool TryParseInt(string text, int min, int max, out int value)
         {
-            return int.TryParse(text, out value) && value >= min && value <= max;
+            value = 0;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+            if (!int.TryParse(text, out value)) return false;
+            return value >= min && value <= max;
         }
 
         private bool TryParseDecimal(string text, decimal min, decimal max, out decimal value)
         {
+            value = 0m;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
             text = text.Replace(",", ".");
-            return decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value)
-                   && value >= min && value <= max;
+            if (!decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
+                return false;
+
+            return value >= min && value <= max;
         }
 
-        private bool Fail(string message, System.Windows.UIElement element)
+        private bool Fail(string message, UIElement element)
         {
-            MessageBox.Show(message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(message, "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
             element.Focus();
             return false;
         }
 
         #endregion
 
-        #region Вспомогательные
+        #region Вспомогательные методы
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
@@ -244,18 +257,12 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void ShowError(string title, Exception ex)
         {
-            MessageBox.Show($"{title}\n{ex.Message}",
-                "Ошибка",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            MessageBox.Show($"{title}\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void ShowInfo(string message)
         {
-            MessageBox.Show(message,
-                "Успех",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         #endregion

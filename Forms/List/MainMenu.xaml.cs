@@ -233,7 +233,7 @@ namespace WpfNastolSystem.Forms.List
             table switch
             {
                 "games" => new GameEditWindow(id),
-                //"persons" => new PersonEditWindow(id),
+                "persons" => new PersonEditWindow(id),
                 //"sessions" => new SessionEditWindow(id),
                 //"categories" => new CategoryEditWindow(id),
                 //"game_copies" => new GameCopyEditWindow(id),

@@ -1,0 +1,226 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.PersonEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+        mc:Ignorable="d"
+        Title="Редактирование пользователя"
+        Height="680"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление пользователя"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Основной контент со скроллом -->
+        <ScrollViewer Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+
+                <!-- ФИО (обязательное поле) -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border x:Name="FullNameBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintFullName"
+                               Text="ФИО *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="FullNameTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="FullNameTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Роль (обязательное поле) -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border x:Name="RoleBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintRole"
+                               Text="Роль *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="RoleTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <ComboBox x:Name="RoleComboBox"
+                              Padding="16,12,16,0"
+                              FontSize="15"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              VerticalContentAlignment="Bottom"
+                              DisplayMemberPath="Value"
+                              SelectedValuePath="Key"
+                              Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Телефон -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border x:Name="PhoneBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintPhone"
+                               Text="Телефон"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="PhoneTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="PhoneTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             MaxLength="20" Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Email -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border x:Name="EmailBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintEmail"
+                               Text="Email"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="EmailTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="EmailTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             MaxLength="100" Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Дата рождения -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border x:Name="BirthDateBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintBirthDate"
+                               Text="Дата рождения"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="BirthDateTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <DatePicker x:Name="BirthDatePicker"
+                                Padding="16,12,16,0"
+                                FontSize="15"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                VerticalContentAlignment="Bottom"
+                                Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Статус блокировки -->
+                <CheckBox x:Name="IsBannedCheckBox"
+                          Content="Заблокирован"
+                          Margin="0,4,0,20"
+                          FontSize="14"
+                          Foreground="{StaticResource TextBlueDark}"
+                          VerticalAlignment="Center"/>
+
+                <!-- Примечания -->
+                <Grid Height="99" Margin="0,0,0,18">
+                    <Border x:Name="NotesBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintNotes"
+                               Text="Примечания"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False" Margin="0,6,0,0" VerticalAlignment="Top">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="NotesTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="NotesTextBox"
+                             Padding="16,20,16,8"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MaxLength="500"
+                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                </Grid>
+
+                
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" 
+                                       Text="Дата регистрации:" 
+                                       Foreground="#2C3E50"
+                                       FontSize="13"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="RegisteredAtText"
+                                       Grid.Row="0" Grid.Column="1" 
+                                       Foreground="#2C3E50"
+                                       FontSize="13"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" 
+                                       Text="Аккаунт:" 
+                                       Foreground="#2C3E50"
+                                       FontSize="13"
+                                       Margin="0,0,0,6"/>
+                            <TextBlock x:Name="AccountLoginText"
+                                       Grid.Row="1" Grid.Column="1" 
+                                       Foreground="#2C3E50"
+                                       FontSize="13"
+                                       Margin="0,0,0,6"/>
+
+
+                <!-- Подсказка об обязательных полях -->
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button x:Name="SaveButton"
+                    Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    IsEnabled="False"
+                    Click="SaveButton_Click"/>
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -17,30 +17,13 @@
                 BorderBrush="{StaticResource BorderBlue}" 
                 BorderThickness="0,0,1,0">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="0,20,0,20">
+                <StackPanel Margin="0,20,0,20" Cursor="">
                     <TextBlock Text="НастолКлаб" 
                                Style="{StaticResource PageTitleStyle}"
                                Margin="16,0,16,20"
                                FontSize="28"/>
 
                     <!-- Блок пользователя -->
-                    <Border Background="{StaticResource PrimaryLightBlue}" 
-                            CornerRadius="8" 
-                            Margin="16,0,16,10" 
-                            Padding="10"
-                            Cursor="Hand">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Ellipse Width="40" Height="40" Fill="{StaticResource PrimaryBlue}" Margin="0,0,10,0"/>
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock x:Name="UserNameText" Text="Загрузка..." FontWeight="SemiBold" Foreground="{StaticResource TextBlueDark}"/>
-                                <TextBlock x:Name="UserRoleText" Text="" FontSize="11" Foreground="Gray"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
 
                     <!-- Кнопки меню -->
                     <Button Content="➕ Игры" 
@@ -63,10 +46,10 @@
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="game_copies"
                             Click="MenuButton_Click"/>
-                    <Button Content="🪑 Столы" 
+                    <Button Content="🖥️ Столы" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="tables"
-                            Click="MenuButton_Click"/>
+                            Click="MenuButton_Click" Cursor="Hand"/>
                     <Button Content="👤 Аккаунты" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="accounts"
@@ -77,12 +60,6 @@
                             Click="MenuButton_Click"/>
 
                     <Separator Margin="16,10" Background="{StaticResource BorderBlue}"/>
-
-                    <!-- Кнопка профиля -->
-                    <Button Content="👤 Мой профиль" 
-                            Style="{StaticResource ModernMenuButtonStyle}"
-                            Tag="profile"
-                            Click="ProfileButton_Click"/>
 
                     <!-- Кнопка настроек -->
                     <Button Content="⚙️ Настройки" 
