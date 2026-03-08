@@ -2,14 +2,15 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Добавление игры"
-        Height="680"
-        Width="520"
+        Height="702"
+        Width="575"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
         Background="#EEF6FF">
 
     <Grid Margin="24">
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -22,21 +23,23 @@
                    Style="{StaticResource PageTitleStyle}"
                    Margin="0,0,0,24"/>
 
-        <!-- Основной контент со скроллом -->
+        <!-- Контент -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
                 <!-- Название -->
                 <Grid Height="62" Margin="0,0,0,16">
-                    <Border x:Name="TitleBorder" Style="{StaticResource InputBorderStyle}"/>
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
                     <TextBlock x:Name="HintTitle"
                                Text="Название игры"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
-                               IsHitTestVisible="False" Height="42">
+                               IsHitTestVisible="False">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="TitleTransform"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
+
                     <TextBox x:Name="TitleTextBox"
                              Padding="16,12,16,0"
                              FontSize="15"
@@ -46,17 +49,22 @@
                              CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
 
+
                 <!-- Описание -->
-                <Grid Height="99" Margin="0,0,0,18">
-                    <Border x:Name="DescriptionBorder" Style="{StaticResource InputBorderStyle}"/>
+                <Grid Height="100" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
                     <TextBlock x:Name="HintDescription"
                                Text="Описание"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
-                               IsHitTestVisible="False" Margin="0,6,0,0" VerticalAlignment="Top">
+                               VerticalAlignment="Top"
+                               Margin="0,6,0,0"
+                               IsHitTestVisible="False">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="DescriptionTransform"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
+
                     <TextBox x:Name="DescriptionTextBox"
                              Padding="16,20,16,8"
                              FontSize="15"
@@ -65,21 +73,22 @@
                              VerticalContentAlignment="Top"
                              TextWrapping="Wrap"
                              AcceptsReturn="True"
-                             AcceptsTab="True"
                              CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
+
 
                 <!-- Год + Издатель -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition/>
                         <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Год -->
                     <Grid Grid.Column="0" Height="62">
-                        <Border x:Name="YearBorder" Style="{StaticResource InputBorderStyle}"/>
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
                         <TextBlock x:Name="HintYear"
                                    Text="Год выпуска"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
@@ -88,18 +97,21 @@
                                 <TranslateTransform x:Name="YearTransform"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
+
                         <TextBox x:Name="YearTextBox"
                                  Padding="16,12,16,0"
                                  FontSize="15"
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Height="53" VerticalAlignment="Top"/>
                     </Grid>
+
 
                     <!-- Издатель -->
                     <Grid Grid.Column="2" Height="62">
-                        <Border x:Name="PublisherBorder" Style="{StaticResource InputBorderStyle}"/>
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
                         <TextBlock x:Name="HintPublisher"
                                    Text="Издатель"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
@@ -108,6 +120,7 @@
                                 <TranslateTransform x:Name="PublisherTransform"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
+
                         <TextBox x:Name="PublisherTextBox"
                                  Padding="16,12,16,0"
                                  FontSize="15"
@@ -118,27 +131,32 @@
                     </Grid>
                 </Grid>
 
+
                 <!-- Категория -->
-                <TextBlock Text="Категория" 
-                           FontSize="14" 
+                <TextBlock Text="Категория"
+                           FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
+
                 <ComboBox x:Name="CategoryComboBox"
                           Style="{StaticResource FilterComboBoxStyle}"
                           Height="48"
                           Margin="0,0,0,16"/>
 
-                <!-- Мин / Макс игроки -->
+
+                <!-- Игроки -->
                 <Grid Margin="0,0,0,16">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition/>
                         <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition/>
                     </Grid.ColumnDefinitions>
 
+                    <!-- Мин -->
                     <Grid Grid.Column="0" Height="62">
-                        <Border x:Name="MinPlayersBorder" Style="{StaticResource InputBorderStyle}"/>
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
                         <TextBlock x:Name="HintMinPlayers"
                                    Text="Мин. игроков"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
@@ -147,17 +165,21 @@
                                 <TranslateTransform x:Name="MinPlayersTransform"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
+
                         <TextBox x:Name="MinPlayersTextBox"
                                  Padding="16,12,16,0"
                                  FontSize="15"
                                  Background="Transparent"
                                  BorderThickness="0"
                                  VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Height="52" VerticalAlignment="Top"/>
                     </Grid>
 
+
+                    <!-- Макс -->
                     <Grid Grid.Column="2" Height="62">
-                        <Border x:Name="MaxPlayersBorder" Style="{StaticResource InputBorderStyle}"/>
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
                         <TextBlock x:Name="HintMaxPlayers"
                                    Text="Макс. игроков"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
@@ -166,7 +188,61 @@
                                 <TranslateTransform x:Name="MaxPlayersTransform"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
+
                         <TextBox x:Name="MaxPlayersTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
+                    </Grid>
+                </Grid>
+
+
+                <!-- Время + возраст -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintPlayTime"
+                                   Text="Время игры (мин)"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="PlayTimeTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="PlayTimeTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,9"/>
+                    </Grid>
+
+
+                    <Grid Grid.Column="2" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintAgeRating"
+                                   Text="Возраст"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="AgeRatingTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="AgeRatingTextBox"
                                  Padding="16,12,16,0"
                                  FontSize="15"
                                  Background="Transparent"
@@ -176,64 +252,20 @@
                     </Grid>
                 </Grid>
 
-                <!-- Время игры + Возраст -->
-                <Grid Margin="0,0,0,16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
 
-                    <Grid Grid.Column="0" Height="62">
-                        <Border x:Name="PlayTimeBorder" Style="{StaticResource InputBorderStyle}"/>
-                        <TextBlock x:Name="HintPlayTime"
-                                   Text="Время игры (мин)"
-                                   Style="{StaticResource FloatingHintTextBoxStyle}"
-                                   IsHitTestVisible="False">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform x:Name="PlayTimeTransform"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                        <TextBox x:Name="PlayTimeTextBox"
-                                 Padding="16,12,16,0"
-                                 FontSize="15"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
-                    </Grid>
+                <!-- BGG -->
+                <Grid Height="62" Margin="0,0,0,20">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
 
-                    <Grid Grid.Column="2" Height="62">
-                        <Border x:Name="AgeRatingBorder" Style="{StaticResource InputBorderStyle}"/>
-                        <TextBlock x:Name="HintAgeRating"
-                                   Text="Возрастной рейтинг"
-                                   Style="{StaticResource FloatingHintTextBoxStyle}"
-                                   IsHitTestVisible="False">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform x:Name="AgeRatingTransform"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
-                        <TextBox x:Name="AgeRatingTextBox"
-                                 Padding="16,12,16,0"
-                                 FontSize="15"
-                                 Background="Transparent"
-                                 BorderThickness="0"
-                                 VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
-                    </Grid>
-                </Grid>
-
-                <!-- Рейтинг BGG -->
-                <Grid Height="62" Margin="0,0,0,24">
-                    <Border x:Name="BggRatingBorder" Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintBggRating"
-                               Text="Рейтинг BGG (0–10)"
+                               Text="Рейтинг BGG (0-10)"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
                                IsHitTestVisible="False">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="BggRatingTransform"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
+
                     <TextBox x:Name="BggRatingTextBox"
                              Padding="16,12,16,0"
                              FontSize="15"
@@ -246,11 +278,13 @@
             </StackPanel>
         </ScrollViewer>
 
+
         <!-- Кнопки -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,16,0,0">
+
             <Button Content="Сохранить"
                     Style="{StaticResource CustomBlueButtonStyle}"
                     Background="#28a745"
@@ -259,6 +293,7 @@
                     Height="48"
                     Margin="0,0,12,0"
                     Click="SaveButton_Click"/>
+
             <Button Content="Отмена"
                     Style="{StaticResource CustomBlueButtonStyle}"
                     Background="#6c757d"
@@ -267,5 +302,6 @@
                     Height="48"
                     Click="CancelButton_Click"/>
         </StackPanel>
+
     </Grid>
 </Window>

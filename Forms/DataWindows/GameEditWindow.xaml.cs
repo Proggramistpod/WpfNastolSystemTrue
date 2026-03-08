@@ -22,7 +22,15 @@ namespace WpfNastolSystem.Forms.Edit
             // Переопределяем ToString, чтобы избежать вывода { Id = 1, Name = ... }
             public override string ToString() => Name ?? "(без названия)";
         }
-
+        public class RoleItem
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public override string ToString()
+            {
+                return Name;
+            }
+        }
         public GameEditWindow(int? id = null)
         {
             InitializeComponent();

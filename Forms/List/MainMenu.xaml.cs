@@ -229,12 +229,11 @@ namespace WpfNastolSystem.Forms.List
                 MessageBoxImage.Error);
         }
 
-        private Window? GetEditWindow(string table, int? id) =>
-            table switch
+        private Window? GetEditWindow(string table, int? id) => table switch
             {
                 "games" => new GameEditWindow(id),
                 "persons" => new PersonEditWindow(id),
-                //"sessions" => new SessionEditWindow(id),
+                "sessions" => new SessionEditWindow(id),
                 //"categories" => new CategoryEditWindow(id),
                 //"game_copies" => new GameCopyEditWindow(id),
                 //"tables" => new TableEditWindow(id),

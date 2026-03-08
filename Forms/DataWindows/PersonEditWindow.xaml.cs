@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
+using static WpfNastolSystem.Forms.Edit.GameEditWindow;
 
 namespace WpfNastolSystem.Forms.Edit
 {
@@ -33,6 +34,10 @@ namespace WpfNastolSystem.Forms.Edit
 
             // Устанавливаем фокус на первое поле после загрузки
             Loaded += (s, e) => FullNameTextBox.Focus();
+            RoleComboBox.SelectionChanged += (s, e) => UpdateRoleHint();
+            RoleComboBox.GotFocus += (s, e) => UpdateRoleHint();
+            RoleComboBox.LostFocus += (s, e) => UpdateRoleHint();
+            Loaded += (s, e) => UpdateRoleHint();
         }
 
         #region Инициализация
@@ -53,7 +58,6 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
 
             // Для ComboBox (ручная обработка, так как FloatingHintHelper не поддерживает ComboBox)
-            RoleComboBox.GotFocus += (s, e) => MoveHintUp(HintRole, RoleTransform);
             RoleComboBox.LostFocus += (s, e) => UpdateComboBoxHintState();
             RoleComboBox.SelectionChanged += (s, e) => UpdateComboBoxHintState();
 
@@ -93,10 +97,7 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateComboBoxHintState()
         {
-            if (RoleComboBox.SelectedItem != null)
-                MoveHintUp(HintRole, RoleTransform);
-            else
-                MoveHintDown(HintRole, RoleTransform);
+        
         }
 
         private void UpdateDatePickerHintState()
@@ -108,6 +109,10 @@ namespace WpfNastolSystem.Forms.Edit
         }
 
         #endregion
+        private void UpdateRoleHint()
+        {
+
+        }
 
         #region Загрузка данных
 
@@ -116,18 +121,19 @@ namespace WpfNastolSystem.Forms.Edit
             try
             {
                 DataTable rolesTable = _db.GetRolesForGrid();
-                _roles.Clear();
+
+                var rolesList = new List<RoleItem>();
 
                 foreach (DataRow row in rolesTable.Rows)
                 {
-                    int roleId = Convert.ToInt32(row["role_id"]);
-                    string roleName = row["name"]?.ToString() ?? "Без названия";
-                    _roles.Add(roleId, roleName);
+                    rolesList.Add(new RoleItem
+                    {
+                        Id = Convert.ToInt32(row["role_id"]),
+                        Name = row["name"]?.ToString() ?? "Без названия"
+                    });
                 }
 
-                RoleComboBox.ItemsSource = _roles;
-                RoleComboBox.SelectedValuePath = "Key";
-                RoleComboBox.DisplayMemberPath = "Value";
+                RoleComboBox.ItemsSource = rolesList;
             }
             catch (Exception ex)
             {
@@ -175,16 +181,6 @@ namespace WpfNastolSystem.Forms.Edit
                     ? Convert.ToDateTime(row["registered_at"]).ToString("dd.MM.yyyy HH:mm")
                     : "Не указано";
 
-                // Информация об аккаунте
-                if (row.Table.Columns.Contains("login") && row["login"] != DBNull.Value)
-                {
-                    AccountLoginText.Text = row["login"].ToString();
-
-                }
-                else
-                {
-                    AccountLoginText.Text = "Не привязан";
-                }
 
                 _isDataChanged = false;
                 SaveButton.IsEnabled = false;
@@ -201,7 +197,24 @@ namespace WpfNastolSystem.Forms.Edit
 
         private bool ValidateFields()
         {
-            // Проверка ФИО
+            if (!BirthDatePicker.SelectedDate.HasValue)
+            {
+                ShowWarning("Дата рождения является обязательным полем", BirthDatePicker);
+                return false;
+            }
+
+            if (BirthDatePicker.SelectedDate.Value > DateTime.Now)
+            {
+                ShowWarning("Дата рождения не может быть в будущем", BirthDatePicker);
+                return false;
+            }
+
+            if (BirthDatePicker.SelectedDate.Value < DateTime.Now.AddYears(-120))
+            {
+                ShowWarning("Некорректная дата рождения", BirthDatePicker);
+                return false;
+            }
+            // ФИО
             if (string.IsNullOrWhiteSpace(FullNameTextBox.Text))
             {
                 ShowWarning("Поле 'ФИО' обязательно для заполнения", FullNameTextBox);
@@ -214,47 +227,54 @@ namespace WpfNastolSystem.Forms.Edit
                 return false;
             }
 
-            // Проверка роли
+            // Роль
             if (RoleComboBox.SelectedValue == null)
             {
                 ShowWarning("Выберите роль пользователя", RoleComboBox);
                 return false;
             }
 
-            // Проверка email (если указан)
-            if (!string.IsNullOrWhiteSpace(EmailTextBox.Text))
+            // ===== Email (обязательное) =====
+            if (string.IsNullOrWhiteSpace(EmailTextBox.Text))
             {
-                if (!IsValidEmail(EmailTextBox.Text))
-                {
-                    ShowWarning("Введен некорректный email адрес", EmailTextBox);
-                    return false;
-                }
-
-                if (!_db.IsEmailUnique(EmailTextBox.Text, _personId))
-                {
-                    ShowWarning("Пользователь с таким email уже существует", EmailTextBox);
-                    return false;
-                }
+                ShowWarning("Email является обязательным полем", EmailTextBox);
+                return false;
             }
 
-            // Проверка телефона (если указан)
-            if (!string.IsNullOrWhiteSpace(PhoneTextBox.Text))
+            if (!IsValidEmail(EmailTextBox.Text))
             {
-                string phone = CleanPhoneNumber(PhoneTextBox.Text);
-                if (phone.Length < 10 || !phone.All(char.IsDigit))
-                {
-                    ShowWarning("Введен некорректный номер телефона\nФормат: +7 (999) 123-45-67", PhoneTextBox);
-                    return false;
-                }
-
-                if (!_db.IsPhoneUnique(PhoneTextBox.Text, _personId))
-                {
-                    ShowWarning("Пользователь с таким телефоном уже существует", PhoneTextBox);
-                    return false;
-                }
+                ShowWarning("Введен некорректный email адрес", EmailTextBox);
+                return false;
             }
 
-            // Проверка даты рождения (если указана)
+            if (!_db.IsEmailUnique(EmailTextBox.Text, _personId))
+            {
+                ShowWarning("Пользователь с таким email уже существует", EmailTextBox);
+                return false;
+            }
+
+            // ===== Телефон (обязательное) =====
+            if (string.IsNullOrWhiteSpace(PhoneTextBox.Text))
+            {
+                ShowWarning("Номер телефона является обязательным полем", PhoneTextBox);
+                return false;
+            }
+
+            string phone = CleanPhoneNumber(PhoneTextBox.Text);
+
+            if (phone.Length < 10 || !phone.All(char.IsDigit))
+            {
+                ShowWarning("Введен некорректный номер телефона\nФормат: +7 (999) 123-45-67", PhoneTextBox);
+                return false;
+            }
+
+            if (!_db.IsPhoneUnique(PhoneTextBox.Text, _personId))
+            {
+                ShowWarning("Пользователь с таким телефоном уже существует", PhoneTextBox);
+                return false;
+            }
+
+            // Дата рождения
             if (BirthDatePicker.SelectedDate.HasValue)
             {
                 if (BirthDatePicker.SelectedDate.Value > DateTime.Now)

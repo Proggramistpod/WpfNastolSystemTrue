@@ -1,0 +1,332 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.SessionEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Добавление сессии"
+        Height="702"
+        Width="575"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+
+    <Grid Margin="24">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление сессии"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+
+                <!-- Организатор (Person) -->
+                <TextBlock Text="Организатор"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+
+                <ComboBox x:Name="PersonComboBox"
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16"
+                          DisplayMemberPath="FullName"
+                          SelectedValuePath="Id"/>
+
+                <!-- Стол -->
+                <TextBlock Text="Стол"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+
+                <ComboBox x:Name="TableComboBox"
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16"
+                          DisplayMemberPath="DisplayName"
+                          SelectedValuePath="Id"/>
+
+                <!-- Дата и время начала -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
+                    <TextBlock x:Name="HintStartedAt"
+                               Text="Дата и время начала"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="StartedAtTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <DatePicker x:Name="StartedDatePicker"
+                                SelectedDateFormat="Short"
+                                Padding="16,12,16,0"
+                                FontSize="15"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                VerticalContentAlignment="Bottom"
+                                
+                                Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Время начала (часы/минуты) -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Часы -->
+                    <Grid Grid.Column="0" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintStartedHour"
+                                   Text="Часы (0-23)"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="StartedHourTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="StartedHourTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 MaxLength="2"
+                                 Margin="0,0,0,10"/>
+                    </Grid>
+
+                    <!-- Минуты -->
+                    <Grid Grid.Column="2" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintStartedMinute"
+                                   Text="Минуты (0-59)"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="StartedMinuteTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="StartedMinuteTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 MaxLength="2"
+                                 Margin="0,0,0,10"/>
+                    </Grid>
+                </Grid>
+
+                <!-- Дата и время окончания (опционально) -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
+                    <TextBlock x:Name="HintEndedAt"
+                               Text="Дата и время окончания (необязательно)"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="EndedAtTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <DatePicker x:Name="EndedDatePicker"
+                                SelectedDateFormat="Short"
+                                Padding="16,12,16,0"
+                                FontSize="15"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                VerticalContentAlignment="Bottom"
+                               
+                                Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Время окончания (часы/минуты) -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Часы окончания -->
+                    <Grid Grid.Column="0" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintEndedHour"
+                                   Text="Часы"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="EndedHourTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="EndedHourTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 MaxLength="2"
+                                 IsEnabled="False"/>
+                    </Grid>
+
+                    <!-- Минуты окончания -->
+                    <Grid Grid.Column="2" Height="62">
+                        <Border Style="{StaticResource InputBorderStyle}"/>
+
+                        <TextBlock x:Name="HintEndedMinute"
+                                   Text="Минуты"
+                                   Style="{StaticResource FloatingHintTextBoxStyle}"
+                                   IsHitTestVisible="False">
+                            <TextBlock.RenderTransform>
+                                <TranslateTransform x:Name="EndedMinuteTransform"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+
+                        <TextBox x:Name="EndedMinuteTextBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 MaxLength="2"
+                                 IsEnabled="False"/>
+                    </Grid>
+                </Grid>
+
+                <!-- CheckBox для указания активной сессии (без времени окончания) -->
+                <CheckBox x:Name="IsActiveSessionCheckBox"
+                          Content="Сессия активна (не завершена)"
+                          FontSize="14"
+                          Foreground="{StaticResource TextBlueDark}"
+                          Margin="0,0,0,16"
+                          Checked="IsActiveSessionCheckBox_Checked"
+                          Unchecked="IsActiveSessionCheckBox_Checked"/>
+
+                <!-- Стоимость -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
+                    <TextBlock x:Name="HintCost"
+                               Text="Стоимость"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="CostTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <TextBox x:Name="CostTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Text="0.00"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Статус оплаты -->
+                <Grid Margin="0,0,0,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Оплачено -->
+                    <CheckBox Grid.Column="0"
+                              x:Name="PaidCheckBox"
+                              Content="Оплачено"
+                              FontSize="14"
+                              Foreground="{StaticResource TextBlueDark}"
+                              VerticalAlignment="Center"/>
+
+                    <!-- Способ оплаты -->
+                    <ComboBox Grid.Column="2"
+                              x:Name="PaymentMethodComboBox"
+                              Style="{StaticResource FilterComboBoxStyle}"
+                              Height="48"
+                              IsEnabled="{Binding ElementName=PaidCheckBox, Path=IsChecked}"/>
+                </Grid>
+
+                <!-- Примечания -->
+                <Grid Height="100" Margin="0,0,0,20">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+
+                    <TextBlock x:Name="HintNotes"
+                               Text="Примечания"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               VerticalAlignment="Top"
+                               Margin="0,6,0,0"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="NotesTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+
+                    <TextBox x:Name="NotesTextBox"
+                             Padding="16,20,16,8"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+
+            <Button Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    Click="SaveButton_Click"/>
+
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

@@ -31,6 +31,26 @@ namespace WpfNastolSystem.Moduls.Visual
 
             UpdateState(passwordBox, hint, transform);
         }
+        public static void Attach(DatePicker datePicker, TextBlock hint, TranslateTransform transform)
+        {
+            datePicker.GotFocus += (s, e) => AnimateUp(hint, transform);
+            datePicker.LostFocus += (s, e) => UpdateState(datePicker, hint, transform);
+            datePicker.SelectedDateChanged += (s, e) => UpdateState(datePicker, hint, transform);
+            datePicker.Loaded += (s, e) => UpdateState(datePicker, hint, transform); // Для начального состояния
+
+            UpdateState(datePicker, hint, transform);
+        }
+
+        private static void UpdateState(DatePicker dp, TextBlock hint, TranslateTransform transform)
+        {
+            bool hasText = dp.SelectedDate.HasValue;
+            bool isFocused = dp.IsFocused;
+
+            if (hasText || isFocused)
+                AnimateUp(hint, transform);
+            else
+                AnimateDown(hint, transform);
+        }
 
         private static void UpdateState(TextBox tb, TextBlock hint, TranslateTransform transform)
         {

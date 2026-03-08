@@ -535,5 +535,102 @@ namespace WpfNastolSystem.Moduls.DB
                 });
         }
         #endregion
+        #region СЕССИИ
+
+        public DataTable GetSessionById(int id)
+        {
+            string query = @"
+        SELECT 
+            s.*,
+            p.full_name as person_name,
+            t.table_number,
+            t.zone
+        FROM sessions s
+        LEFT JOIN persons p ON s.person_id = p.person_id
+        LEFT JOIN tables t ON s.table_id = t.table_id
+        WHERE s.session_id = @id";
+
+            return dbManager.Select(query,
+                new Dictionary<string, object>
+                {
+            { "@id", id }
+                });
+        }
+
+        public void InsertSession(Dictionary<string, object> parameters)
+        {
+            string query = @"
+        INSERT INTO sessions
+        (person_id, table_id, started_at, ended_at, cost, paid, payment_method, created_by, notes)
+        VALUES
+        (@person_id, @table_id, @started_at, @ended_at, @cost, @paid, @payment_method, @created_by, @notes);
+        SELECT LAST_INSERT_ID();";
+
+            dbManager.Scalar(query, parameters);
+        }
+
+        public void UpdateSession(Dictionary<string, object> parameters)
+        {
+            string query = @"
+        UPDATE sessions SET
+            person_id = @person_id,
+            table_id = @table_id,
+            started_at = @started_at,
+            ended_at = @ended_at,
+            cost = @cost,
+            paid = @paid,
+            payment_method = @payment_method,
+            notes = @notes
+        WHERE session_id = @session_id";
+
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public DataTable GetActiveSessions()
+        {
+            string query = @"
+        SELECT
+            s.session_id,
+            p.full_name AS organizer_name,
+            t.table_number,
+            s.started_at,
+            s.cost,
+            s.notes
+        FROM sessions s
+        LEFT JOIN persons p ON s.person_id = p.person_id
+        LEFT JOIN tables t ON s.table_id = t.table_id
+        WHERE s.ended_at IS NULL
+        ORDER BY s.started_at DESC";
+
+            return dbManager.Select(query);
+        }
+
+        public DataTable GetSessionsByDateRange(DateTime startDate, DateTime endDate)
+        {
+            string query = @"
+        SELECT
+            s.session_id,
+            p.full_name AS organizer_name,
+            t.table_number,
+            s.started_at,
+            s.ended_at,
+            s.cost,
+            s.paid,
+            s.payment_method
+        FROM sessions s
+        LEFT JOIN persons p ON s.person_id = p.person_id
+        LEFT JOIN tables t ON s.table_id = t.table_id
+        WHERE DATE(s.started_at) BETWEEN @start_date AND @end_date
+        ORDER BY s.started_at DESC";
+
+            return dbManager.Select(query,
+                new Dictionary<string, object>
+                {
+            { "@start_date", startDate.ToString("yyyy-MM-dd") },
+            { "@end_date", endDate.ToString("yyyy-MM-dd") }
+                });
+        }
+
+        #endregion
     }
 }
