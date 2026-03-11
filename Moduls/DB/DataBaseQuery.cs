@@ -680,8 +680,9 @@
 
         public void InsertGameCopy(Dictionary<string, object> parameters)
         {
+            // Экранируем Condition обратными кавычками
             string query = @"INSERT INTO game_copies 
-        (game_id, inventory_number, acquired_date, location, is_available, Condition, notes)
+        (game_id, inventory_number, acquired_date, location, is_available, condition, notes)
         VALUES 
         (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
 
@@ -690,17 +691,32 @@
 
         public void UpdateGameCopy(Dictionary<string, object> parameters)
         {
+            // Экранируем Condition обратными кавычками
             string query = @"UPDATE game_copies SET
         game_id = @game_id,
         inventory_number = @inventory_number,
         acquired_date = @acquired_date,
         location = @location,
         is_available = @is_available,
-        Condition = @condition,
+        condition = @condition,
         notes = @notes
         WHERE copy_id = @copy_id";
 
             dbManager.NonQuery(query, parameters);
+        }
+
+        // Добавьте метод для проверки уникальности инвентарного номера
+        public bool IsInventoryNumberUnique(string inventoryNumber, int? excludeCopyId)
+        {
+            string query = @"SELECT COUNT(*) FROM game_copies WHERE inventory_number = @inventory_number" +
+                          (excludeCopyId.HasValue ? " AND copy_id != @copy_id" : "");
+
+            var parameters = new Dictionary<string, object> { { "@inventory_number", inventoryNumber } };
+            if (excludeCopyId.HasValue)
+                parameters["@copy_id"] = excludeCopyId.Value;
+
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
         }
 
         // Для TableEditWindow
@@ -787,6 +803,7 @@
 
             dbManager.NonQuery(query, parameters);
         }
+
         #endregion
         #endregion
     }

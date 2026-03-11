@@ -112,14 +112,12 @@
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
                 <ComboBox x:Name="ConditionComboBox"
-                          Style="{StaticResource FilterComboBoxStyle}"
-                          Height="48"
-                          Margin="0,0,0,16">
+          Style="{StaticResource FilterComboBoxStyle}"
+          Height="48"
+          Margin="0,0,0,16">
                     <ComboBoxItem Content="Отличное"/>
                     <ComboBoxItem Content="Хорошее"/>
-                    <ComboBoxItem Content="Удовлетворительное"/>
-                    <ComboBoxItem Content="Требует ремонта"/>
-                    <ComboBoxItem Content="Списана"/>
+                    <ComboBoxItem Content="Плохое"/>
                 </ComboBox>
 
                 <!-- Примечания -->

@@ -21,6 +21,25 @@ namespace WpfNastolSystem.Forms.Edit
             public override string ToString() => Title ?? "(без названия)";
         }
 
+        // Соответствие между русскими отображаемыми значениями и английскими значениями ENUM
+        private readonly Dictionary<string, string> _conditionMapping = new()
+        {
+            ["Отличное"] = "good",
+            ["Хорошее"] = "fair",
+            ["Удовлетворительное"] = "fair", // Если нет точного соответствия, можно использовать fair
+            ["Плохое"] = "bad",
+            ["Требует ремонта"] = "bad",
+            ["Списана"] = "bad"
+        };
+
+        // Обратное соответствие для отображения
+        private readonly Dictionary<string, string> _russianConditionMapping = new()
+        {
+            ["good"] = "Отличное",
+            ["fair"] = "Хорошее",
+            ["bad"] = "Плохое"
+        };
+
         public GameCopyEditWindow(int? id = null)
         {
             InitializeComponent();
@@ -72,6 +91,12 @@ namespace WpfNastolSystem.Forms.Edit
                 GameComboBox.ItemsSource = items;
                 GameComboBox.DisplayMemberPath = nameof(GameItem.Title);
                 GameComboBox.SelectedValuePath = nameof(GameItem.Id);
+
+                // Если редактирование, не выбираем автоматически
+                if (!_copyId.HasValue && items.Count > 0)
+                {
+                    GameComboBox.SelectedIndex = 0; // Выбираем первую игру по умолчанию
+                }
             }
             catch (Exception ex)
             {
@@ -91,28 +116,37 @@ namespace WpfNastolSystem.Forms.Edit
                 GameComboBox.SelectedValue = Convert.ToInt32(row["game_id"]);
                 SetText(InventoryNumberTextBox, row["inventory_number"]);
 
-                if (row["acquired_date"] != DBNull.Value)
+                if (row["acquired_date"] != DBNull.Value && row["acquired_date"] != null)
                 {
-                    AcquiredDatePicker.SelectedDate = Convert.ToDateTime(row["acquired_date"]);
+                    if (DateTime.TryParse(row["acquired_date"].ToString(), out DateTime date))
+                    {
+                        AcquiredDatePicker.SelectedDate = date;
+                    }
                 }
 
                 SetText(LocationTextBox, row["location"]);
 
                 if (row["is_available"] != DBNull.Value)
                 {
-                    IsAvailableCheckBox.IsChecked = Convert.ToBoolean(row["is_available"]);
+                    IsAvailableCheckBox.IsChecked = Convert.ToInt32(row["is_available"]) == 1;
                 }
 
-                if (row["Condition"] != DBNull.Value) // Обратите внимание на заглавную C
+                // Загружаем состояние из ENUM и конвертируем в русский для отображения
+                if (row["Condition"] != DBNull.Value && row["Condition"] != null)
                 {
-                    string condition = row["Condition"].ToString();
-                    // Ищем соответствующий элемент в ComboBox
-                    foreach (ComboBoxItem item in ConditionComboBox.Items)
+                    string conditionValue = row["Condition"].ToString(); // Это будет 'good', 'fair' или 'bad'
+
+                    // Конвертируем английское значение в русское для отображения
+                    if (_russianConditionMapping.TryGetValue(conditionValue, out string? russianValue))
                     {
-                        if (item.Content.ToString() == condition)
+                        // Ищем соответствующий элемент в ComboBox по русскому тексту
+                        foreach (ComboBoxItem item in ConditionComboBox.Items)
                         {
-                            ConditionComboBox.SelectedItem = item;
-                            break;
+                            if (item.Content.ToString() == russianValue)
+                            {
+                                ConditionComboBox.SelectedItem = item;
+                                break;
+                            }
                         }
                     }
                 }
@@ -166,8 +200,9 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void InsertGameCopy(Dictionary<string, object> parameters)
         {
+            // Используем обратные кавычки для зарезервированного слова Condition
             string query = @"INSERT INTO game_copies 
-                (game_id, inventory_number, acquired_date, location, is_available, Condition, notes)
+                (game_id, inventory_number, acquired_date, location, is_available, condition, notes)
                 VALUES 
                 (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
 
@@ -176,13 +211,14 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateGameCopy(Dictionary<string, object> parameters)
         {
+            // Используем обратные кавычки для зарезервированного слова Condition
             string query = @"UPDATE game_copies SET
                 game_id = @game_id,
                 inventory_number = @inventory_number,
                 acquired_date = @acquired_date,
                 location = @location,
                 is_available = @is_available,
-                Condition = @condition,
+                condition = @condition,
                 notes = @notes
                 WHERE copy_id = @copy_id";
 
@@ -203,6 +239,22 @@ namespace WpfNastolSystem.Forms.Edit
             if (InventoryNumberTextBox.Text.Trim().Length > 50)
                 return Fail("Инвентарный номер не может быть длиннее 50 символов", InventoryNumberTextBox);
 
+            // Проверка уникальности инвентарного номера (опционально)
+            if (!IsInventoryNumberUnique(InventoryNumberTextBox.Text.Trim(), _copyId))
+                return Fail("Инвентарный номер уже существует", InventoryNumberTextBox);
+
+            // Получаем выбранное русское значение из ComboBox
+            string? selectedRussianCondition = ConditionComboBox.SelectedItem != null
+                ? ((ComboBoxItem)ConditionComboBox.SelectedItem).Content.ToString()
+                : null;
+
+            // Конвертируем в английское значение для ENUM в БД
+            string? englishConditionValue = null;
+            if (selectedRussianCondition != null && _conditionMapping.TryGetValue(selectedRussianCondition, out string? mappedValue))
+            {
+                englishConditionValue = mappedValue;
+            }
+
             parameters = new Dictionary<string, object>
             {
                 ["@game_id"] = GameComboBox.SelectedValue,
@@ -213,9 +265,7 @@ namespace WpfNastolSystem.Forms.Edit
                 ["@location"] = string.IsNullOrWhiteSpace(LocationTextBox.Text)
                     ? DBNull.Value : LocationTextBox.Text.Trim(),
                 ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0, // TINYINT(1)
-                ["@condition"] = ConditionComboBox.SelectedItem != null
-                    ? ((ComboBoxItem)ConditionComboBox.SelectedItem).Content.ToString()
-                    : DBNull.Value,
+                ["@condition"] = englishConditionValue,
                 ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text)
                     ? DBNull.Value : NotesTextBox.Text.Trim()
             };
@@ -226,6 +276,19 @@ namespace WpfNastolSystem.Forms.Edit
                 return Fail("Расположение не может быть длиннее 100 символов", LocationTextBox);
 
             return true;
+        }
+
+        private bool IsInventoryNumberUnique(string inventoryNumber, int? excludeCopyId)
+        {
+            string query = @"SELECT COUNT(*) FROM game_copies WHERE inventory_number = @inventory_number" +
+                          (excludeCopyId.HasValue ? " AND copy_id != @copy_id" : "");
+
+            var parameters = new Dictionary<string, object> { { "@inventory_number", inventoryNumber } };
+            if (excludeCopyId.HasValue)
+                parameters["@copy_id"] = excludeCopyId.Value;
+
+            object result = new DbManager().Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
         }
 
         private bool Fail(string message, UIElement element)

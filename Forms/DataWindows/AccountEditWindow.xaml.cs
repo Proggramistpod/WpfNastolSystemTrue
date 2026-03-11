@@ -168,11 +168,6 @@ namespace WpfNastolSystem.Forms.Edit
                 {
                     CreatedAtText.Text = Convert.ToDateTime(row["created_at"]).ToString("dd.MM.yyyy HH:mm");
                 }
-
-                if (row["last_login"] != DBNull.Value)
-                {
-                    LastLoginText.Text = Convert.ToDateTime(row["last_login"]).ToString("dd.MM.yyyy HH:mm");
-                }
             }
             catch (Exception ex)
             {
