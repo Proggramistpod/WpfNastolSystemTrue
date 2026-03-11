@@ -1,0 +1,125 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.RoleEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Добавление роли"
+        Height="520"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление роли"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Код роли -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintCode"
+                               Text="Код роли *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="CodeTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="CodeTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             MaxLength="50"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Название роли -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintName"
+                               Text="Название роли *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="NameTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="NameTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             MaxLength="100"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Описание -->
+                <Grid Height="100" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintDescription"
+                               Text="Описание роли"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               VerticalAlignment="Top"
+                               Margin="0,6,0,0"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="DescriptionTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="DescriptionTextBox"
+                             Padding="16,20,16,8"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MaxLength="500"
+                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                </Grid>
+
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,175 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.AccountEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Добавление аккаунта"
+        Height="381"
+        Width="520"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление аккаунта"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Пользователь -->
+                <TextBlock Text="Пользователь *"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+                <ComboBox x:Name="PersonComboBox"
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16"/>
+
+                <!-- Логин -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintLogin"
+                               Text="Логин *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="LoginTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="LoginTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             MaxLength="50"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Пароль (только при создании) -->
+                <Grid Height="62" Margin="0,0,0,16"
+                      Visibility="{Binding ElementName=IsEditMode, Path=Visibility}">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintPassword"
+                               Text="Пароль *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="PasswordTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <PasswordBox x:Name="PasswordBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Подтверждение пароля (только при создании) -->
+                <Grid Height="62" Margin="0,0,0,16"
+                      Visibility="{Binding ElementName=IsEditMode, Path=Visibility}">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintConfirmPassword"
+                               Text="Подтверждение пароля *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="ConfirmPasswordTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <PasswordBox x:Name="ConfirmPasswordBox"
+                                 Padding="16,12,16,0"
+                                 FontSize="15"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 VerticalContentAlignment="Bottom"
+                                 CaretBrush="{StaticResource PrimaryBlue}"
+                                 Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Скрытый элемент для режима редактирования -->
+                <TextBlock x:Name="IsEditMode" 
+                           Visibility="Collapsed"
+                           Text="{Binding HasValue, RelativeSource={RelativeSource AncestorType=Window}}"/>
+
+                <!-- Информация о создании -->
+                <Grid Margin="0,0,0,16" 
+                      Visibility="{Binding ElementName=IsEditMode, Path=Visibility}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Grid.Column="0"
+                               Text="Дата создания:"
+                               Foreground="#2C3E50"
+                               FontSize="13"
+                               Margin="0,0,0,6"/>
+                    <TextBlock x:Name="CreatedAtText"
+                               Grid.Row="0"
+                               Grid.Column="1"
+                               Foreground="#2C3E50"
+                               FontSize="13"
+                               Margin="0,0,0,6"/>
+
+                    <TextBlock Grid.Row="1"
+                               Grid.Column="0"
+                               Text="Последний вход:"
+                               Foreground="#2C3E50"
+                               FontSize="13"/>
+                    <TextBlock x:Name="LastLoginText"
+                               Grid.Row="1"
+                               Grid.Column="1"
+                               Foreground="#2C3E50"
+                               FontSize="13"/>
+                </Grid>
+
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

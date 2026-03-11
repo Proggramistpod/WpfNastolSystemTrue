@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using WpfNastolSystem.Forms.Edit;
 using WpfNastolSystem.Moduls.DB;
+using WpfNastolSystem.Windows;
 
 namespace WpfNastolSystem.Forms.List
 {
@@ -234,11 +235,11 @@ namespace WpfNastolSystem.Forms.List
                 "games" => new GameEditWindow(id),
                 "persons" => new PersonEditWindow(id),
                 "sessions" => new SessionEditWindow(id),
-                //"categories" => new CategoryEditWindow(id),
-                //"game_copies" => new GameCopyEditWindow(id),
-                //"tables" => new TableEditWindow(id),
-                //"accounts" => new AccountEditWindow(id),
-                //"roles" => new RoleEditWindow(id),
+                "categories" => new CategoryEditWindow(id),
+                "game_copies" => new GameCopyEditWindow(id),
+                "tables" => new TableEditWindow(id),
+                "accounts" => new AccountEditWindow(id),
+                "roles" => new RoleEditWindow(id),
                 _ => null
             };
 

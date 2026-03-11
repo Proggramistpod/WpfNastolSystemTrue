@@ -1,0 +1,179 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.GameCopyEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Добавление копии игры"
+        Height="798"
+        Width="616"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление копии игры"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Игра -->
+                <TextBlock Text="Игра *"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+                <ComboBox x:Name="GameComboBox"
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16"/>
+
+                <!-- Инвентарный номер -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintInventoryNumber"
+                               Text="Инвентарный номер *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="InventoryNumberTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="InventoryNumberTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Дата приобретения -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintAcquiredDate"
+                               Text="Дата приобретения"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="AcquiredDateTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <DatePicker x:Name="AcquiredDatePicker"
+                                Padding="16,12,16,0"
+                                FontSize="15"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                VerticalContentAlignment="Bottom"
+                                Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Расположение -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintLocation"
+                               Text="Расположение (стеллаж/полка)"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="LocationTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="LocationTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Доступность -->
+                <CheckBox x:Name="IsAvailableCheckBox"
+                          Content="Доступна для выдачи"
+                          Margin="0,4,0,20"
+                          FontSize="14"
+                          Foreground="{StaticResource TextBlueDark}"
+                          IsChecked="True"/>
+
+                <!-- Состояние -->
+                <TextBlock Text="Состояние"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+                <ComboBox x:Name="ConditionComboBox"
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16">
+                    <ComboBoxItem Content="Отличное"/>
+                    <ComboBoxItem Content="Хорошее"/>
+                    <ComboBoxItem Content="Удовлетворительное"/>
+                    <ComboBoxItem Content="Требует ремонта"/>
+                    <ComboBoxItem Content="Списана"/>
+                </ComboBox>
+
+                <!-- Примечания -->
+                <Grid Height="100" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintNotes"
+                               Text="Примечания"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               VerticalAlignment="Top"
+                               Margin="0,6,0,0"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="NotesTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="NotesTextBox"
+                             Padding="16,20,16,8"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MaxLength="500"
+                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                </Grid>
+
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

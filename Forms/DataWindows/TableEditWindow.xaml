@@ -1,0 +1,152 @@
+﻿<Window x:Class="WpfNastolSystem.Forms.Edit.TableEditWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Добавление стола"
+        Height="646"
+        Width="616"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow"
+        ResizeMode="NoResize"
+        Background="#EEF6FF">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок -->
+        <TextBlock x:Name="TitleText"
+                   Text="Добавление стола"
+                   Style="{StaticResource PageTitleStyle}"
+                   Margin="0,0,0,24"/>
+
+        <!-- Контент -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Номер стола -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintTableNumber"
+                               Text="Номер стола *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="TableNumberTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="TableNumberTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Вместимость -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintCapacity"
+                               Text="Вместимость (чел) *"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="CapacityTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="CapacityTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Зона -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintZone"
+                               Text="Зона (зал/терраса и т.д.)"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="ZoneTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="ZoneTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
+
+                <!-- Доступность -->
+                <CheckBox x:Name="IsAvailableCheckBox"
+                          Content="Доступен для бронирования"
+                          Margin="0,4,0,20"
+                          FontSize="14"
+                          Foreground="{StaticResource TextBlueDark}"
+                          IsChecked="True"/>
+
+                <!-- Примечания -->
+                <Grid Height="100" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintNotes"
+                               Text="Примечания"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               VerticalAlignment="Top"
+                               Margin="0,6,0,0"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="NotesTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="NotesTextBox"
+                             Padding="16,20,16,8"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Top"
+                             TextWrapping="Wrap"
+                             AcceptsReturn="True"
+                             MaxLength="500"
+                             CaretBrush="{StaticResource PrimaryBlue}"/>
+                </Grid>
+
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Margin="0,16,0,0">
+            <Button Content="Сохранить"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#28a745"
+                    BorderBrush="#28a745"
+                    Width="140"
+                    Height="48"
+                    Margin="0,0,12,0"
+                    Click="SaveButton_Click"/>
+            <Button Content="Отмена"
+                    Style="{StaticResource CustomBlueButtonStyle}"
+                    Background="#6c757d"
+                    BorderBrush="#6c757d"
+                    Width="140"
+                    Height="48"
+                    Click="CancelButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
