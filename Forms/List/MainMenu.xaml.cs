@@ -26,7 +26,7 @@ namespace WpfNastolSystem.Forms.List
         private void InitializePage() => LoadTable("games");
 
         private void ProfileButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Профиль");
-        private void SettingsButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Настройки");
+        private void ThemButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Тема");
 
         #region Загрузка таблицы
         private void MenuButton_Click(object sender, RoutedEventArgs e)
@@ -303,6 +303,9 @@ namespace WpfNastolSystem.Forms.List
                 "started_at" => "Начало",
                 "ended_at" => "Окончание",
                 "comment" => "Комментарий",
+                "paid" => "Оплачено",
+                "cost" => "Заплатить",
+                "payment_method" => "Способ оплаты",
 
                 // Categories
                 "name" => "Название",

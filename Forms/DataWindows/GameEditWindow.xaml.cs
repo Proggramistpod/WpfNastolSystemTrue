@@ -66,6 +66,7 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(PlayTimeTextBox, HintPlayTime, PlayTimeTransform);
             FloatingHintHelper.Attach(AgeRatingTextBox, HintAgeRating, AgeRatingTransform);
             FloatingHintHelper.Attach(BggRatingTextBox, HintBggRating, BggRatingTransform);
+            FloatingHintHelper.Attach(PricePerHourTextBox, HintPricePerHour, PricePerHourTransform);
         }
 
         #endregion
@@ -116,7 +117,6 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 var table = _db.GetGameById(_gameId!.Value);
                 if (table.Rows.Count == 0) return;
-
                 var row = table.Rows[0];
 
                 SetText(TitleTextBox, row["title"]);
@@ -128,6 +128,9 @@ namespace WpfNastolSystem.Forms.Edit
                 SetText(PlayTimeTextBox, row["play_time_min"]);
                 SetText(AgeRatingTextBox, row["age_rating"]);
                 SetText(BggRatingTextBox, row["bgg_rating"]);
+
+                // Новое поле
+                SetText(PricePerHourTextBox, row["price_per_hour"]);
 
                 if (row["category_id"] != DBNull.Value)
                 {
@@ -192,6 +195,9 @@ namespace WpfNastolSystem.Forms.Edit
 
             if (!TryParseInt(MaxPlayersTextBox.Text, min, 50, out int max))
                 return Fail($"Макс. игроков должно быть ≥ {min} и ≤ 50", MaxPlayersTextBox);
+                
+            if (!TryParseDecimal(PricePerHourTextBox.Text, 0, 10000, out decimal pricePerHour))
+                return Fail("Цена за час: 0–10000 ₽", PricePerHourTextBox);
 
             if (!TryParseInt(PlayTimeTextBox.Text, 5, 1440, out int time))
                 return Fail("Время игры: 5–1440 минут", PlayTimeTextBox);
@@ -216,7 +222,8 @@ namespace WpfNastolSystem.Forms.Edit
                 ["@play_time_min"] = time,
                 ["@age_rating"] = age,
                 ["@bgg_rating"] = rating,
-                ["@category_id"] = CategoryComboBox.SelectedValue
+                ["@category_id"] = CategoryComboBox.SelectedValue,
+                ["@price_per_hour"] = pricePerHour
             };
 
             return true;

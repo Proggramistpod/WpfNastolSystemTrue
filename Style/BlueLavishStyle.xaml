@@ -254,5 +254,56 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <Style x:Key="ModernDatePickerStyle" TargetType="DatePicker">
+
+        <Setter Property="Height" Value="48"/>
+        <Setter Property="FontSize" Value="15"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DatePicker">
+
+                    <Grid>
+
+                        <DatePickerTextBox x:Name="PART_TextBox"
+                                       Background="Transparent"
+                                       BorderThickness="0"
+                                       VerticalContentAlignment="Bottom"
+                                       Padding="16,12,30,0"/>
+
+                        <Button x:Name="PART_Button"
+                            Width="24"
+                            HorizontalAlignment="Right"
+                            Margin="0,0,8,0"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Focusable="False">
+                            <TextBlock Text="📅"
+                                   FontSize="14"
+                                   VerticalAlignment="Center"/>
+                        </Button>
+
+                        <Popup x:Name="PART_Popup"
+                           Placement="Bottom"
+                           AllowsTransparency="True"
+                           Focusable="False"
+                           IsOpen="{TemplateBinding IsDropDownOpen}">
+                            <Border Background="White"
+                                BorderBrush="{StaticResource BorderBlue}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                                <Calendar/>
+                            </Border>
+                        </Popup>
+
+                    </Grid>
+
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+
+    </Style>
 
 </ResourceDictionary>

@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Добавление копии игры"
-        Height="798"
-        Width="616"
+        Height="686"
+        Width="682"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
@@ -112,13 +112,34 @@
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
                 <ComboBox x:Name="ConditionComboBox"
-          Style="{StaticResource FilterComboBoxStyle}"
-          Height="48"
-          Margin="0,0,0,16">
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          Margin="0,0,0,16">
                     <ComboBoxItem Content="Отличное"/>
                     <ComboBoxItem Content="Хорошее"/>
                     <ComboBoxItem Content="Плохое"/>
                 </ComboBox>
+
+                <!-- Цена за минуту -->
+                <Grid Height="62" Margin="0,0,0,16">
+                    <Border Style="{StaticResource InputBorderStyle}"/>
+                    <TextBlock x:Name="HintPricePerMinute"
+                               Text="Цена за минуту (руб)"
+                               Style="{StaticResource FloatingHintTextBoxStyle}"
+                               IsHitTestVisible="False">
+                        <TextBlock.RenderTransform>
+                            <TranslateTransform x:Name="PricePerMinuteTransform"/>
+                        </TextBlock.RenderTransform>
+                    </TextBlock>
+                    <TextBox x:Name="PricePerMinuteTextBox"
+                             Padding="16,12,16,0"
+                             FontSize="15"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             VerticalContentAlignment="Bottom"
+                             CaretBrush="{StaticResource PrimaryBlue}"
+                             Margin="0,0,0,10"/>
+                </Grid>
 
                 <!-- Примечания -->
                 <Grid Height="100" Margin="0,0,0,16">

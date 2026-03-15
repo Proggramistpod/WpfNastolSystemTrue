@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
@@ -21,30 +23,25 @@ namespace WpfNastolSystem.Forms.Edit
             public override string ToString() => Title ?? "(без названия)";
         }
 
-        // Соответствие между русскими отображаемыми значениями и английскими значениями ENUM
-        private readonly Dictionary<string, string> _conditionMapping = new()
+        // Enum для состояний игры (соответствует ENUM в БД: 'good', 'fair', 'bad')
+        public enum GameCondition
         {
-            ["Отличное"] = "good",
-            ["Хорошее"] = "fair",
-            ["Удовлетворительное"] = "fair", // Если нет точного соответствия, можно использовать fair
-            ["Плохое"] = "bad",
-            ["Требует ремонта"] = "bad",
-            ["Списана"] = "bad"
-        };
+            [Description("Отличное")]
+            good,
 
-        // Обратное соответствие для отображения
-        private readonly Dictionary<string, string> _russianConditionMapping = new()
-        {
-            ["good"] = "Отличное",
-            ["fair"] = "Хорошее",
-            ["bad"] = "Плохое"
-        };
+            [Description("Хорошее")]
+            fair,
+
+            [Description("Плохое")]
+            bad
+        }
 
         public GameCopyEditWindow(int? id = null)
         {
             InitializeComponent();
             _copyId = id;
             ConfigureWindow();
+            InitializeConditionComboBox();
             LoadGames();
             if (_copyId.HasValue)
                 LoadCopyData();
@@ -57,6 +54,33 @@ namespace WpfNastolSystem.Forms.Edit
             bool editMode = _copyId.HasValue;
             Title = editMode ? "Редактирование копии игры" : "Добавление копии игры";
             TitleText.Text = Title;
+        }
+
+        private void InitializeConditionComboBox()
+        {
+            ConditionComboBox.Items.Clear();
+
+            // Заполняем ComboBox значениями из enum с описаниями
+            foreach (GameCondition condition in Enum.GetValues(typeof(GameCondition)))
+            {
+                var item = new ComboBoxItem
+                {
+                    Content = GetEnumDescription(condition),
+                    Tag = condition
+                };
+                ConditionComboBox.Items.Add(item);
+            }
+
+            ConditionComboBox.SelectedIndex = 0; // Отличное по умолчанию
+        }
+
+        private string GetEnumDescription(Enum value)
+        {
+            var field = value.GetType().GetField(value.ToString());
+            var attribute = field?.GetCustomAttributes(typeof(DescriptionAttribute), false)
+                .FirstOrDefault() as DescriptionAttribute;
+
+            return attribute?.Description ?? value.ToString();
         }
 
         private void AttachFloatingHints()
@@ -74,7 +98,8 @@ namespace WpfNastolSystem.Forms.Edit
                 var table = _db.GetGamesForGrid();
                 if (table == null || table.Rows.Count == 0)
                 {
-                    MessageBox.Show("Нет доступных игр. Сначала добавьте игру.");
+                    MessageBox.Show("Нет доступных игр. Сначала добавьте игру.",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
                     GameComboBox.IsEnabled = false;
                     return;
                 }
@@ -88,19 +113,19 @@ namespace WpfNastolSystem.Forms.Edit
                         Title = row["title"]?.ToString() ?? "(без названия)"
                     });
                 }
+
                 GameComboBox.ItemsSource = items;
                 GameComboBox.DisplayMemberPath = nameof(GameItem.Title);
                 GameComboBox.SelectedValuePath = nameof(GameItem.Id);
 
-                // Если редактирование, не выбираем автоматически
                 if (!_copyId.HasValue && items.Count > 0)
                 {
-                    GameComboBox.SelectedIndex = 0; // Выбираем первую игру по умолчанию
+                    GameComboBox.SelectedIndex = 0;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка при загрузке игр:\n" + ex.Message);
+                ShowError("Ошибка при загрузке игр", ex);
                 GameComboBox.IsEnabled = false;
             }
         }
@@ -109,40 +134,47 @@ namespace WpfNastolSystem.Forms.Edit
         {
             try
             {
-                var table = GetGameCopyById(_copyId!.Value);
-                if (table.Rows.Count == 0) return;
+                // Используем метод из DataBaseQuery
+                var table = _db.GetGameCopyById(_copyId!.Value);
+
+                if (table.Rows.Count == 0)
+                {
+                    MessageBox.Show("Копия игры не найдена", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    DialogResult = false;
+                    Close();
+                    return;
+                }
 
                 var row = table.Rows[0];
+
+                // Заполняем данные
                 GameComboBox.SelectedValue = Convert.ToInt32(row["game_id"]);
-                SetText(InventoryNumberTextBox, row["inventory_number"]);
+                InventoryNumberTextBox.Text = row["inventory_number"]?.ToString() ?? "";
 
-                if (row["acquired_date"] != DBNull.Value && row["acquired_date"] != null)
+                if (row["acquired_date"] != DBNull.Value &&
+                    DateTime.TryParse(row["acquired_date"].ToString(), out DateTime date))
                 {
-                    if (DateTime.TryParse(row["acquired_date"].ToString(), out DateTime date))
-                    {
-                        AcquiredDatePicker.SelectedDate = date;
-                    }
+                    AcquiredDatePicker.SelectedDate = date;
                 }
 
-                SetText(LocationTextBox, row["location"]);
+                LocationTextBox.Text = row["location"]?.ToString() ?? "";
 
-                if (row["is_available"] != DBNull.Value)
+                IsAvailableCheckBox.IsChecked = row["is_available"] != DBNull.Value &&
+                                               Convert.ToInt32(row["is_available"]) == 1;
+
+                // Загружаем состояние (в БД хранится как 'good', 'fair', 'bad')
+                if (row["conditions"] != DBNull.Value)
                 {
-                    IsAvailableCheckBox.IsChecked = Convert.ToInt32(row["is_available"]) == 1;
-                }
+                    string conditionValue = row["conditions"].ToString() ?? "good";
 
-                // Загружаем состояние из ENUM и конвертируем в русский для отображения
-                if (row["Condition"] != DBNull.Value && row["Condition"] != null)
-                {
-                    string conditionValue = row["Condition"].ToString(); // Это будет 'good', 'fair' или 'bad'
-
-                    // Конвертируем английское значение в русское для отображения
-                    if (_russianConditionMapping.TryGetValue(conditionValue, out string? russianValue))
+                    // Парсим строку в enum
+                    if (Enum.TryParse<GameCondition>(conditionValue, true, out GameCondition condition))
                     {
-                        // Ищем соответствующий элемент в ComboBox по русскому тексту
+                        // Находим соответствующий элемент в ComboBox
                         foreach (ComboBoxItem item in ConditionComboBox.Items)
                         {
-                            if (item.Content.ToString() == russianValue)
+                            if (item.Tag is GameCondition cond && cond == condition)
                             {
                                 ConditionComboBox.SelectedItem = item;
                                 break;
@@ -151,7 +183,7 @@ namespace WpfNastolSystem.Forms.Edit
                     }
                 }
 
-                SetText(NotesTextBox, row["notes"]);
+                NotesTextBox.Text = row["notes"]?.ToString() ?? "";
             }
             catch (Exception ex)
             {
@@ -159,18 +191,7 @@ namespace WpfNastolSystem.Forms.Edit
             }
         }
 
-        private DataTable GetGameCopyById(int id)
-        {
-            string query = @"SELECT * FROM game_copies WHERE copy_id = @id";
-            return new DbManager().Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
-        private void SetText(TextBox box, object value)
-        {
-            box.Text = value == DBNull.Value || value == null ? "" : value.ToString();
-        }
-
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             if (!TryValidate(out var copyData))
                 return;
@@ -180,12 +201,12 @@ namespace WpfNastolSystem.Forms.Edit
                 if (_copyId.HasValue)
                 {
                     copyData["@copy_id"] = _copyId.Value;
-                    UpdateGameCopy(copyData);
+                    await System.Threading.Tasks.Task.Run(() => UpdateGameCopy(copyData));
                     ShowInfo("Копия игры успешно обновлена");
                 }
                 else
                 {
-                    InsertGameCopy(copyData);
+                    await System.Threading.Tasks.Task.Run(() => InsertGameCopy(copyData));
                     ShowInfo("Копия игры успешно добавлена");
                 }
 
@@ -200,95 +221,66 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void InsertGameCopy(Dictionary<string, object> parameters)
         {
-            // Используем обратные кавычки для зарезервированного слова Condition
-            string query = @"INSERT INTO game_copies 
-                (game_id, inventory_number, acquired_date, location, is_available, condition, notes)
-                VALUES 
-                (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
-
-            new DbManager().NonQuery(query, parameters);
+            // Используем метод из DataBaseQuery
+            _db.InsertGameCopy(parameters);
         }
 
         private void UpdateGameCopy(Dictionary<string, object> parameters)
         {
-            // Используем обратные кавычки для зарезервированного слова Condition
-            string query = @"UPDATE game_copies SET
-                game_id = @game_id,
-                inventory_number = @inventory_number,
-                acquired_date = @acquired_date,
-                location = @location,
-                is_available = @is_available,
-                condition = @condition,
-                notes = @notes
-                WHERE copy_id = @copy_id";
-
-            new DbManager().NonQuery(query, parameters);
+            // Используем метод из DataBaseQuery
+            _db.UpdateGameCopy(parameters);
         }
 
         private bool TryValidate(out Dictionary<string, object> parameters)
         {
             parameters = new Dictionary<string, object>();
 
+            // Проверка выбора игры
             if (GameComboBox.SelectedValue == null)
                 return Fail("Выберите игру", GameComboBox);
 
+            // Проверка инвентарного номера
             if (string.IsNullOrWhiteSpace(InventoryNumberTextBox.Text))
                 return Fail("Введите инвентарный номер", InventoryNumberTextBox);
 
-            // Проверка длины inventory_number (VARCHAR(50) в вашей БД)
-            if (InventoryNumberTextBox.Text.Trim().Length > 50)
+            string inventoryNumber = InventoryNumberTextBox.Text.Trim();
+
+            if (inventoryNumber.Length > 50)
                 return Fail("Инвентарный номер не может быть длиннее 50 символов", InventoryNumberTextBox);
 
-            // Проверка уникальности инвентарного номера (опционально)
-            if (!IsInventoryNumberUnique(InventoryNumberTextBox.Text.Trim(), _copyId))
+            // Проверка уникальности инвентарного номера (используем метод из DataBaseQuery)
+            if (!_db.IsInventoryNumberUnique(inventoryNumber, _copyId))
                 return Fail("Инвентарный номер уже существует", InventoryNumberTextBox);
 
-            // Получаем выбранное русское значение из ComboBox
-            string? selectedRussianCondition = ConditionComboBox.SelectedItem != null
-                ? ((ComboBoxItem)ConditionComboBox.SelectedItem).Content.ToString()
-                : null;
-
-            // Конвертируем в английское значение для ENUM в БД
-            string? englishConditionValue = null;
-            if (selectedRussianCondition != null && _conditionMapping.TryGetValue(selectedRussianCondition, out string? mappedValue))
+            // Получение выбранного состояния
+            GameCondition selectedCondition = GameCondition.good;
+            if (ConditionComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is GameCondition condition)
             {
-                englishConditionValue = mappedValue;
+                selectedCondition = condition;
             }
 
+            // Проверка длины location
+            string? location = string.IsNullOrWhiteSpace(LocationTextBox.Text) ? null : LocationTextBox.Text.Trim();
+            if (location?.Length > 100)
+                return Fail("Расположение не может быть длиннее 100 символов", LocationTextBox);
+
+            // Формирование параметров
             parameters = new Dictionary<string, object>
             {
                 ["@game_id"] = GameComboBox.SelectedValue,
-                ["@inventory_number"] = InventoryNumberTextBox.Text.Trim(),
+                ["@inventory_number"] = inventoryNumber,
                 ["@acquired_date"] = AcquiredDatePicker.SelectedDate.HasValue
                     ? (object)AcquiredDatePicker.SelectedDate.Value.ToString("yyyy-MM-dd")
                     : DBNull.Value,
-                ["@location"] = string.IsNullOrWhiteSpace(LocationTextBox.Text)
-                    ? DBNull.Value : LocationTextBox.Text.Trim(),
-                ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0, // TINYINT(1)
-                ["@condition"] = englishConditionValue,
+                ["@location"] = location ?? (object)DBNull.Value,
+                ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0,
+                ["@condition"] = selectedCondition.ToString(), // Сохраняем как 'good', 'fair' или 'bad'
                 ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text)
-                    ? DBNull.Value : NotesTextBox.Text.Trim()
+                    ? DBNull.Value : NotesTextBox.Text.Trim(),
+                ["play_time_min"] = PricePerMinuteTextBox.Text
             };
 
-            // Проверка длины location (VARCHAR(100))
-            if (parameters["@location"] != DBNull.Value &&
-                ((string)parameters["@location"]).Length > 100)
-                return Fail("Расположение не может быть длиннее 100 символов", LocationTextBox);
-
             return true;
-        }
-
-        private bool IsInventoryNumberUnique(string inventoryNumber, int? excludeCopyId)
-        {
-            string query = @"SELECT COUNT(*) FROM game_copies WHERE inventory_number = @inventory_number" +
-                          (excludeCopyId.HasValue ? " AND copy_id != @copy_id" : "");
-
-            var parameters = new Dictionary<string, object> { { "@inventory_number", inventoryNumber } };
-            if (excludeCopyId.HasValue)
-                parameters["@copy_id"] = excludeCopyId.Value;
-
-            object result = new DbManager().Scalar(query, parameters);
-            return Convert.ToInt32(result) == 0;
         }
 
         private bool Fail(string message, UIElement element)
@@ -306,12 +298,32 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void ShowError(string title, Exception ex)
         {
-            MessageBox.Show($"{title}\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"{title}\n{ex.Message}", "Ошибка",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
 
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        // Обработчики для ограничения длины ввода
+        private void InventoryNumberTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (InventoryNumberTextBox.Text.Length > 50)
+            {
+                InventoryNumberTextBox.Text = InventoryNumberTextBox.Text.Substring(0, 50);
+                InventoryNumberTextBox.CaretIndex = InventoryNumberTextBox.Text.Length;
+            }
+        }
+
+        private void LocationTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (LocationTextBox.Text.Length > 100)
+            {
+                LocationTextBox.Text = LocationTextBox.Text.Substring(0, 100);
+                LocationTextBox.CaretIndex = LocationTextBox.Text.Length;
+            }
         }
     }
 }

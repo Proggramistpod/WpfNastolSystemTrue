@@ -30,7 +30,7 @@
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="games"
                             Click="MenuButton_Click"/>
-                    <Button Content="👥 Пользователи" 
+                    <Button Content="👥 Люди" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="persons"
                             Click="MenuButton_Click"/>
@@ -62,9 +62,9 @@
                     <Separator Margin="16,10" Background="{StaticResource BorderBlue}"/>
 
                     <!-- Кнопка настроек -->
-                    <Button Content="⚙️ Настройки" 
+                    <Button Content="Смена темы" 
                             Style="{StaticResource ModernMenuButtonStyle}"
-                            Click="SettingsButton_Click"/>
+                            Click="ThemButton_Click"/>
 
                     <!-- Выход -->
                     <Button Content="🚪 Выход" 

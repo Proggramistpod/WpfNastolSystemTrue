@@ -1,526 +1,463 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Data;
-using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
+using System.Xml.Linq;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
 
 namespace WpfNastolSystem.Forms.Edit
 {
+    public class TableItem
+    {
+        public int Id { get; set; }
+        public string DisplayText { get; set; }
+        public override string ToString() => DisplayText;
+    }
+    public class PersonItem
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public override string ToString() => Name; // добавить эту строку
+    }
     public partial class SessionEditWindow : Window
     {
         private readonly DataBaseQuery _db = new();
-        private readonly DbManager _dbManager = new(); // Добавляем прямой доступ к DbManager
         private readonly int? _sessionId;
-        private readonly int? _currentUserId;
+        private readonly int _currentUserPersonId;
 
-        // Вложенные классы для элементов ComboBox
-        public class PersonItem
-        {
-            public int Id { get; set; }
-            public string FullName { get; set; } = string.Empty;
-            public bool IsBanned { get; set; }
-            public override string ToString() => FullName;
-        }
+        private ObservableCollection<ParticipantViewModel> _participants = new();
 
-        public class TableItem
-        {
-            public int Id { get; set; }
-            public int TableNumber { get; set; }
-            public int Capacity { get; set; }
-            public string Zone { get; set; } = string.Empty;
-            public bool IsAvailable { get; set; }
-            public string DisplayName => $"Стол {TableNumber} ({Zone}, {Capacity} чел.)";
-            public override string ToString() => DisplayName;
-        }
+        private const decimal HOURLY_RATE = 300m;
+        private const double ROUND_INTERVAL_MIN = 30;
 
-        public class PaymentMethodItem
-        {
-            public string Value { get; set; } = string.Empty;
-            public string DisplayName { get; set; } = string.Empty;
-            public override string ToString() => DisplayName;
-        }
-
-        public SessionEditWindow(int? id = null, int? currentUserId = null)
+        public SessionEditWindow(int? sessionId = null, int currentUserPersonId = 0)
         {
             InitializeComponent();
+            _sessionId = sessionId;
+            _currentUserPersonId = currentUserPersonId;
 
-            _sessionId = id;
-            _currentUserId = currentUserId;
-            ConfigureWindow();
-            LoadPersons();
+            Title = _sessionId.HasValue ? "Редактирование сессии" : "Добавление сессии";
+            tbTitle.Text = Title;
+
+            lvParticipants.ItemsSource = _participants;
+
+            LoadOrganizersAndParticipantsList();
             LoadTables();
-            LoadPaymentMethods();
+            AttachFloatingHints();
+            AttachCostCalculationEvents();
 
             if (_sessionId.HasValue)
+            {
                 LoadSessionData();
+            }
             else
-                SetDefaultValues();
-
-            AttachFloatingHints();
+            {
+                dpStartDate.SelectedDate = DateTime.Today;
+                tbStartHour.Text = DateTime.Now.Hour.ToString("00");
+                tbStartMinute.Text = DateTime.Now.Minute.ToString("00");
+                chkActiveSession.IsChecked = true;
+                UpdateCalculatedCost();
+            }
         }
 
         #region Инициализация
 
-        private void ConfigureWindow()
-        {
-            bool editMode = _sessionId.HasValue;
-            Title = editMode ? "Редактирование сессии" : "Добавление сессии";
-            TitleText.Text = Title;
-        }
-
         private void AttachFloatingHints()
         {
-            FloatingHintHelper.Attach(StartedDatePicker, HintStartedAt, StartedAtTransform);
-            FloatingHintHelper.Attach(StartedHourTextBox, HintStartedHour, StartedHourTransform);
-            FloatingHintHelper.Attach(StartedMinuteTextBox, HintStartedMinute, StartedMinuteTransform);
-            FloatingHintHelper.Attach(EndedDatePicker, HintEndedAt, EndedAtTransform);
-            FloatingHintHelper.Attach(EndedHourTextBox, HintEndedHour, EndedHourTransform);
-            FloatingHintHelper.Attach(EndedMinuteTextBox, HintEndedMinute, EndedMinuteTransform);
-            FloatingHintHelper.Attach(CostTextBox, HintCost, CostTransform);
-            FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
+            FloatingHintHelper.Attach(dpStartDate, HintStartDate, StartDateTransform);
+            FloatingHintHelper.Attach(tbStartHour, HintStartTime, StartTimeTransform);
+            FloatingHintHelper.Attach(tbStartMinute, HintStartTime, StartTimeTransform);
+            FloatingHintHelper.Attach(dpEndDate, HintEndDate, EndDateTransform);
+            FloatingHintHelper.Attach(tbEndHour, HintEndTime, EndTimeTransform);
+            FloatingHintHelper.Attach(tbEndMinute, HintEndTime, EndTimeTransform);
+            FloatingHintHelper.Attach(tbNotes, HintNotes, NotesTransform);
         }
 
-        private void SetDefaultValues()
+        private void AttachCostCalculationEvents()
         {
-            StartedDatePicker.SelectedDate = DateTime.Today;
-            StartedHourTextBox.Text = DateTime.Now.Hour.ToString("D2");
-            StartedMinuteTextBox.Text = "00";
-            CostTextBox.Text = "0.00";
-
-            if (_currentUserId.HasValue)
-            {
-                SelectCurrentUser();
-            }
-        }
-
-        private void SelectCurrentUser()
-        {
-            if (!_currentUserId.HasValue || PersonComboBox.ItemsSource == null)
-                return;
-
-            var items = PersonComboBox.ItemsSource as IEnumerable<PersonItem>;
-            var currentUser = items?.FirstOrDefault(p => p.Id == _currentUserId.Value);
-            if (currentUser != null)
-                PersonComboBox.SelectedItem = currentUser;
+            dpStartDate.SelectedDateChanged += (s, e) => UpdateCalculatedCost();
+            tbStartHour.TextChanged += (s, e) => UpdateCalculatedCost();
+            tbStartMinute.TextChanged += (s, e) => UpdateCalculatedCost();
+            dpEndDate.SelectedDateChanged += (s, e) => UpdateCalculatedCost();
+            tbEndHour.TextChanged += (s, e) => UpdateCalculatedCost();
+            tbEndMinute.TextChanged += (s, e) => UpdateCalculatedCost();
+            chkActiveSession.Checked += (s, e) => UpdateCalculatedCost();
+            chkActiveSession.Unchecked += (s, e) => UpdateCalculatedCost();
         }
 
         #endregion
 
         #region Загрузка данных
 
-        private void LoadPersons()
+        private void LoadOrganizersAndParticipantsList()
         {
-            try
+            // Для участников — только активные посетители (роль 1, не забанены)
+            var dtVisitors = _db.GetActiveVisitors();
+            var visitors = dtVisitors.AsEnumerable().Select(row => new PersonItem
             {
-                var table = _db.GetActivePersons();
+                Id = row.Field<int>("person_id"),
+                Name = row.Field<string>("full_name")
+            }).ToList();
 
-                if (table == null || table.Rows.Count == 0)
+            cmbAddParticipant.ItemsSource = visitors;
+            cmbAddParticipant.DisplayMemberPath = "Name";
+            cmbAddParticipant.SelectedValuePath = "Id";
+
+            // Для организаторов — все гейммастеры (включая неактивных)
+            var dtMasters = _db.GetGameMasters(includeInactive: true);
+            var masters = dtMasters.AsEnumerable().Select(row => new PersonItem
+            {
+                Id = row.Field<int>("person_id"),
+                Name = row.Field<string>("full_name")
+            }).ToList();
+
+            // Если сессия редактируется, добавим текущего организатора, если его нет среди мастеров
+            if (_sessionId.HasValue)
+            {
+                var sessionData = _db.GetSessionById(_sessionId.Value);
+                if (sessionData != null && sessionData.Rows.Count > 0)
                 {
-                    MessageBox.Show("Нет доступных организаторов.");
-                    PersonComboBox.IsEnabled = false;
-                    return;
-                }
+                    int orgId = Convert.ToInt32(sessionData.Rows[0]["organizer_id"]);
+                    string orgName = sessionData.Rows[0]["organizer_name"]?.ToString() ?? "";
 
-                var items = new List<PersonItem>();
-
-                foreach (DataRow row in table.Rows)
-                {
-                    items.Add(new PersonItem
+                    if (!masters.Any(m => m.Id == orgId) && orgId > 0)
                     {
-                        Id = Convert.ToInt32(row["person_id"]),
-                        FullName = row["full_name"]?.ToString() ?? "Без имени",
-                        IsBanned = false
-                    });
+                        // Пробуем получить данные организатора из базы
+                        var personDt = _db.GetPersonById(orgId);
+                        if (personDt.Rows.Count > 0)
+                        {
+                            masters.Add(new PersonItem
+                            {
+                                Id = orgId,
+                                Name = personDt.Rows[0]["full_name"].ToString()
+                            });
+                        }
+                    }
                 }
+            }
 
-                PersonComboBox.ItemsSource = items;
-                PersonComboBox.DisplayMemberPath = "FullName";
-                PersonComboBox.SelectedValuePath = "Id";
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка при загрузке организаторов:\n" + ex.Message);
-                PersonComboBox.IsEnabled = false;
-            }
+            cmbOrganizer.ItemsSource = masters;
+            cmbOrganizer.DisplayMemberPath = "Name";
+            cmbOrganizer.SelectedValuePath = "Id";
         }
 
         private void LoadTables()
         {
-            try
+            var dt = _db.GetTablesForGrid();
+            var tables = new List<TableItem>();
+            foreach (DataRow row in dt.Rows)
             {
-                var table = _db.GetTablesForGrid();
-
-                if (table == null || table.Rows.Count == 0)
+                tables.Add(new TableItem
                 {
-                    MessageBox.Show("Нет доступных столов.");
-                    TableComboBox.IsEnabled = false;
-                    return;
-                }
-
-                var items = new List<TableItem>();
-
-                foreach (DataRow row in table.Rows)
-                {
-                    items.Add(new TableItem
-                    {
-                        Id = Convert.ToInt32(row["table_id"]),
-                        TableNumber = Convert.ToInt32(row["table_number"]),
-                        Capacity = Convert.ToInt32(row["capacity"]),
-                        Zone = row["zone"]?.ToString() ?? "Без зоны",
-                        IsAvailable = Convert.ToBoolean(row["is_available"])
-                    });
-                }
-
-                TableComboBox.ItemsSource = items;
-                TableComboBox.DisplayMemberPath = "DisplayName";
-                TableComboBox.SelectedValuePath = "Id";
+                    Id = Convert.ToInt32(row["table_id"]),
+                    DisplayText = $"Стол {row["table_number"]} • {row["capacity"]} чел. • {row["zone"]}"
+                });
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка при загрузке столов:\n" + ex.Message);
-                TableComboBox.IsEnabled = false;
-            }
-        }
-
-        private void LoadPaymentMethods()
-        {
-            var methods = new List<PaymentMethodItem>
-            {
-                new PaymentMethodItem { Value = "cash", DisplayName = "Наличные" },
-                new PaymentMethodItem { Value = "card", DisplayName = "Банковская карта" },
-                new PaymentMethodItem { Value = "online", DisplayName = "Онлайн оплата" },
-                new PaymentMethodItem { Value = "bonus", DisplayName = "Бонусы" }
-            };
-
-            PaymentMethodComboBox.ItemsSource = methods;
-            PaymentMethodComboBox.SelectedValuePath = "Value";
-            PaymentMethodComboBox.DisplayMemberPath = "DisplayName";
-            PaymentMethodComboBox.SelectedIndex = 0;
+            cmbTable.ItemsSource = tables;
+            cmbTable.DisplayMemberPath = "DisplayText";
+            cmbTable.SelectedValuePath = "Id";
         }
 
         private void LoadSessionData()
         {
-            try
+            var dt = _db.GetSessionById(_sessionId.Value);
+            if (dt == null || dt.Rows.Count == 0)
             {
-                var table = _db.GetSessionById(_sessionId!.Value);
-                if (table.Rows.Count == 0) return;
-
-                var row = table.Rows[0];
-
-                // Организатор
-                if (row["person_id"] != DBNull.Value)
-                    PersonComboBox.SelectedValue = Convert.ToInt32(row["person_id"]);
-
-                // Стол
-                if (row["table_id"] != DBNull.Value)
-                    TableComboBox.SelectedValue = Convert.ToInt32(row["table_id"]);
-
-                // Дата и время начала
-                if (row["started_at"] != DBNull.Value)
-                {
-                    DateTime startedAt = Convert.ToDateTime(row["started_at"]);
-                    StartedDatePicker.SelectedDate = startedAt.Date;
-                    StartedHourTextBox.Text = startedAt.Hour.ToString("D2");
-                    StartedMinuteTextBox.Text = startedAt.Minute.ToString("D2");
-                }
-
-                // Дата и время окончания
-                if (row["ended_at"] != DBNull.Value)
-                {
-                    DateTime endedAt = Convert.ToDateTime(row["ended_at"]);
-                    EndedDatePicker.SelectedDate = endedAt.Date;
-                    EndedHourTextBox.Text = endedAt.Hour.ToString("D2");
-                    EndedMinuteTextBox.Text = endedAt.Minute.ToString("D2");
-                    IsActiveSessionCheckBox.IsChecked = false;
-                }
-                else
-                {
-                    IsActiveSessionCheckBox.IsChecked = true;
-                }
-
-                // Стоимость
-                if (row["cost"] != DBNull.Value)
-                    CostTextBox.Text = Convert.ToDecimal(row["cost"]).ToString("F2");
-
-                // Оплата
-                if (row["paid"] != DBNull.Value)
-                    PaidCheckBox.IsChecked = Convert.ToBoolean(row["paid"]);
-
-                // Способ оплаты
-                if (row["payment_method"] != DBNull.Value)
-                    PaymentMethodComboBox.SelectedValue = row["payment_method"].ToString();
-
-                // Примечания
-                if (row["notes"] != DBNull.Value)
-                    NotesTextBox.Text = row["notes"].ToString();
+                Close();
+                return;
             }
-            catch (Exception ex)
+
+            var r = dt.Rows[0];
+
+            if (r["organizer_id"] != DBNull.Value)
+                cmbOrganizer.SelectedValue = Convert.ToInt32(r["organizer_id"]);
+
+            if (r["table_id"] != DBNull.Value)
+                cmbTable.SelectedValue = Convert.ToInt32(r["table_id"]);
+
+            var start = Convert.ToDateTime(r["started_at"]);
+            dpStartDate.SelectedDate = start.Date;
+            tbStartHour.Text = start.Hour.ToString("00");
+            tbStartMinute.Text = start.Minute.ToString("00");
+
+            if (r["ended_at"] != DBNull.Value)
             {
-                ShowError("Ошибка загрузки данных сессии", ex);
+                var end = Convert.ToDateTime(r["ended_at"]);
+                dpEndDate.SelectedDate = end.Date;
+                tbEndHour.Text = end.Hour.ToString("00");
+                tbEndMinute.Text = end.Minute.ToString("00");
+                chkActiveSession.IsChecked = false;
             }
+            else
+            {
+                chkActiveSession.IsChecked = true;
+            }
+
+            chkPaid.IsChecked = Convert.ToBoolean(r["paid"]);
+            tbNotes.Text = r["notes"]?.ToString() ?? "";
+
+            LoadParticipants();
+        }
+
+        private void LoadParticipants()
+        {
+            _participants.Clear();
+            var dt = _db.GetSessionParticipants(_sessionId.Value);
+
+            foreach (DataRow row in dt.Rows)
+            {
+                _participants.Add(new ParticipantViewModel
+                {
+                    RecordId = Convert.ToInt32(row["id"]),
+                    PersonId = Convert.ToInt32(row["person_id"]),
+                    FullName = row["full_name"].ToString(),
+                    AddedAt = row["joined_time"].ToString()
+                });
+            }
+        }
+
+        #endregion
+
+        #region Расчёт стоимости
+
+        private void UpdateCalculatedCost()
+        {
+            if (!dpStartDate.SelectedDate.HasValue ||
+                !int.TryParse(tbStartHour.Text, out int sh) ||
+                !int.TryParse(tbStartMinute.Text, out int sm) ||
+                sh < 0 || sh > 23 || sm < 0 || sm > 59)
+            {
+                tbCalculatedCost.Text = "—";
+                return;
+            }
+
+            DateTime startDt = dpStartDate.SelectedDate.Value.Date.AddHours(sh).AddMinutes(sm);
+
+            if (chkActiveSession.IsChecked == true)
+            {
+                tbCalculatedCost.Text = "";
+                return;
+            }
+
+            if (!dpEndDate.SelectedDate.HasValue ||
+                !int.TryParse(tbEndHour.Text, out int eh) ||
+                !int.TryParse(tbEndMinute.Text, out int em) ||
+                eh < 0 || eh > 23 || em < 0 || em > 59)
+            {
+                tbCalculatedCost.Text = "—";
+                return;
+            }
+
+            DateTime endDt = dpEndDate.SelectedDate.Value.Date.AddHours(eh).AddMinutes(em);
+
+            if (endDt <= startDt)
+            {
+                tbCalculatedCost.Text = "ошибка: время окончания ≤ времени начала";
+                return;
+            }
+
+            TimeSpan duration = endDt - startDt;
+            double totalMinutes = duration.TotalMinutes;
+
+            if (totalMinutes <= 0)
+            {
+                tbCalculatedCost.Text = "0 ₽";
+                return;
+            }
+
+            double roundedMinutes = Math.Ceiling(totalMinutes / ROUND_INTERVAL_MIN) * ROUND_INTERVAL_MIN;
+            decimal hoursEquivalent = (decimal)roundedMinutes / 60m;
+            decimal cost = hoursEquivalent * HOURLY_RATE;
+
+            tbCalculatedCost.Text = $"{cost:N0} ₽";
         }
 
         #endregion
 
         #region Обработчики событий
 
-        private void IsActiveSessionCheckBox_Checked(object sender, RoutedEventArgs e)
+        private void chkActiveSession_CheckedChanged(object sender, RoutedEventArgs e)
         {
-            bool isActive = IsActiveSessionCheckBox.IsChecked == true;
-
-            EndedDatePicker.IsEnabled = !isActive;
-            EndedHourTextBox.IsEnabled = !isActive;
-            EndedMinuteTextBox.IsEnabled = !isActive;
-
-            if (isActive)
-            {
-                EndedDatePicker.SelectedDate = null;
-                EndedHourTextBox.Text = "";
-                EndedMinuteTextBox.Text = "";
-            }
+            if (gridEndTime != null)
+                gridEndTime.IsEnabled = chkActiveSession.IsChecked != true;
         }
 
-        #endregion
-
-        #region Сохранение
-
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        private void btnAddParticipant_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryValidate(out var sessionData))
+            if (cmbAddParticipant.SelectedItem is not PersonItem selected)
+            {
+                MessageBox.Show("Выберите участника из списка!", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            int personId = selected.Id;
+            string name = selected.Name;
+
+            if (_participants.Any(p => p.PersonId == personId))
+            {
+                MessageBox.Show("Этот человек уже в списке участников.", "Внимание",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            _participants.Add(new ParticipantViewModel
+            {
+                PersonId = personId,
+                FullName = name,
+                AddedAt = DateTime.Now.ToString("HH:mm")
+            });
+
+            cmbAddParticipant.SelectedIndex = -1;
+        }
+
+        private void btnRemoveParticipant_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.DataContext is ParticipantViewModel vm)
+                _participants.Remove(vm);
+        }
+
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ValidateAndCollectData(out var parameters, out var participantIds))
                 return;
 
             try
             {
+                int targetSessionId; // локальная переменная для ID сессии, с которой будем работать
+
                 if (_sessionId.HasValue)
                 {
-                    sessionData["@session_id"] = _sessionId.Value;
-                    UpdateSession(sessionData);
-                    ShowInfo("Сессия успешно обновлена");
+                    // Редактирование существующей сессии
+                    parameters["@session_id"] = _sessionId.Value;
+                    _db.UpdateSession(parameters);
+                    _db.ClearSessionParticipants(_sessionId.Value);
+                    targetSessionId = _sessionId.Value; // используем существующий ID
                 }
                 else
                 {
-                    InsertSession(sessionData);
-                    ShowInfo("Сессия успешно добавлена");
+                    // Создание новой сессии
+                    int newId = _db.InsertSessionAndGetId(parameters);
+                    targetSessionId = newId; // сохраняем новый ID в локальную переменную
                 }
+
+                // Добавляем участников (используем targetSessionId)
+                foreach (int pid in participantIds)
+                    _db.AddParticipantToSession(targetSessionId, pid);
 
                 DialogResult = true;
                 Close();
             }
             catch (Exception ex)
             {
-                ShowError("Ошибка при сохранении", ex);
+                MessageBox.Show($"Ошибка сохранения:\n{ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private bool TryValidate(out Dictionary<string, object> parameters)
+        private bool ValidateAndCollectData(out Dictionary<string, object> parameters, out List<int> participantPersonIds)
         {
-            parameters = new Dictionary<string, object>();
+            parameters = null;
+            participantPersonIds = null;
 
-            // Проверка организатора
-            if (PersonComboBox.SelectedValue == null)
-                return Fail("Выберите организатора", PersonComboBox);
-
-            // Проверка стола
-            if (TableComboBox.SelectedValue == null)
-                return Fail("Выберите стол", TableComboBox);
-
-            // Проверка даты начала
-            if (!StartedDatePicker.SelectedDate.HasValue)
-                return Fail("Выберите дату начала", StartedDatePicker);
-
-            // Проверка времени начала
-            if (!TryParseTime(StartedHourTextBox.Text, StartedMinuteTextBox.Text, 0, 23, 0, 59, out int startHour, out int startMinute))
-                return Fail("Некорректное время начала (часы: 0-23, минуты: 0-59)", StartedHourTextBox);
-
-            DateTime startedAt = StartedDatePicker.SelectedDate.Value.Date
-                .AddHours(startHour)
-                .AddMinutes(startMinute);
-
-            // Проверка времени окончания (если указано)
-            DateTime? endedAt = null;
-            if (IsActiveSessionCheckBox.IsChecked == false)
+            if (cmbOrganizer.SelectedValue == null)
             {
-                if (!EndedDatePicker.SelectedDate.HasValue)
-                    return Fail("Выберите дату окончания", EndedDatePicker);
-
-                if (!TryParseTime(EndedHourTextBox.Text, EndedMinuteTextBox.Text, 0, 23, 0, 59, out int endHour, out int endMinute))
-                    return Fail("Некорректное время окончания", EndedHourTextBox);
-
-                endedAt = EndedDatePicker.SelectedDate.Value.Date
-                    .AddHours(endHour)
-                    .AddMinutes(endMinute);
-
-                if (endedAt <= startedAt)
-                    return Fail("Время окончания должно быть позже времени начала", EndedDatePicker);
+                MessageBox.Show("Выберите организатора", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                cmbOrganizer.Focus();
+                return false;
             }
 
-            // Проверка стоимости
-            if (!TryParseDecimal(CostTextBox.Text, 0, 100000, out decimal cost))
-                return Fail("Некорректная стоимость (0-100000)", CostTextBox);
+            if (cmbTable.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите стол", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                cmbTable.Focus();
+                return false;
+            }
+
+            if (!dpStartDate.SelectedDate.HasValue ||
+                !int.TryParse(tbStartHour.Text, out int sh) ||
+                !int.TryParse(tbStartMinute.Text, out int sm) ||
+                sh < 0 || sh > 23 || sm < 0 || sm > 59)
+            {
+                MessageBox.Show("Некорректное время начала (часы 0–23, минуты 0–59)", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            DateTime startDt = dpStartDate.SelectedDate.Value.Date.AddHours(sh).AddMinutes(sm);
+            DateTime? endDt = null;
+
+            if (chkActiveSession.IsChecked != true)
+            {
+                if (!dpEndDate.SelectedDate.HasValue ||
+                    !int.TryParse(tbEndHour.Text, out int eh) ||
+                    !int.TryParse(tbEndMinute.Text, out int em) ||
+                    eh < 0 || eh > 23 || em < 0 || em > 59)
+                {
+                    MessageBox.Show("Некорректное время окончания (часы 0–23, минуты 0–59)", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+
+                endDt = dpEndDate.SelectedDate.Value.Date.AddHours(eh).AddMinutes(em);
+
+                if (endDt <= startDt)
+                {
+                    MessageBox.Show("Время окончания должно быть позже времени начала", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return false;
+                }
+            }
+
+            decimal cost = 0m;
+            if (chkActiveSession.IsChecked != true && endDt.HasValue)
+            {
+                TimeSpan duration = endDt.Value - startDt;
+                double totalMinutes = duration.TotalMinutes;
+                if (totalMinutes > 0)
+                {
+                    double roundedMinutes = Math.Ceiling(totalMinutes / ROUND_INTERVAL_MIN) * ROUND_INTERVAL_MIN;
+                    decimal hoursEquivalent = (decimal)roundedMinutes / 60m;
+                    cost = hoursEquivalent * HOURLY_RATE;
+                }
+            }
 
             parameters = new Dictionary<string, object>
             {
-                ["@person_id"] = PersonComboBox.SelectedValue,
-                ["@table_id"] = TableComboBox.SelectedValue,
-                ["@started_at"] = startedAt.ToString("yyyy-MM-dd HH:mm:ss"),
-                ["@ended_at"] = endedAt?.ToString("yyyy-MM-dd HH:mm:ss"),
+                ["@organizer_id"] = cmbOrganizer.SelectedValue,
+                ["@table_id"] = cmbTable.SelectedValue,
+                ["@started_at"] = startDt.ToString("yyyy-MM-dd HH:mm:ss"),
+                ["@ended_at"] = endDt.HasValue ? endDt.Value.ToString("yyyy-MM-dd HH:mm:ss") : DBNull.Value,
                 ["@cost"] = cost,
-                ["@paid"] = PaidCheckBox.IsChecked == true ? 1 : 0,
-                ["@payment_method"] = PaidCheckBox.IsChecked == true && PaymentMethodComboBox.SelectedValue != null
-                    ? PaymentMethodComboBox.SelectedValue.ToString()
-                    : DBNull.Value,
-                ["@created_by"] = _currentUserId,
-                ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text) ? DBNull.Value : NotesTextBox.Text.Trim()
+                ["@paid"] = chkPaid.IsChecked == true ? 1 : 0,
+                ["@notes"] = string.IsNullOrWhiteSpace(tbNotes.Text) ? DBNull.Value : tbNotes.Text.Trim(),
+                ["@created_by"] = _currentUserPersonId
             };
 
+            participantPersonIds = _participants.Select(p => p.PersonId).ToList();
             return true;
         }
 
-        private void InsertSession(Dictionary<string, object> parameters)
-        {
-            string query = @"
-                INSERT INTO sessions 
-                (person_id, table_id, started_at, ended_at, cost, paid, payment_method, created_by, notes)
-                VALUES 
-                (@person_id, @table_id, @started_at, @ended_at, @cost, @paid, @payment_method, @created_by, @notes)";
-
-            _dbManager.NonQuery(query, parameters); // Используем _dbManager.NonQuery
-        }
-
-        private void UpdateSession(Dictionary<string, object> parameters)
-        {
-            string query = @"
-                UPDATE sessions SET
-                    person_id = @person_id,
-                    table_id = @table_id,
-                    started_at = @started_at,
-                    ended_at = @ended_at,
-                    cost = @cost,
-                    paid = @paid,
-                    payment_method = @payment_method,
-                    notes = @notes
-                WHERE session_id = @session_id";
-
-            _dbManager.NonQuery(query, parameters); // Используем _dbManager.NonQuery
-        }
-
-        #endregion
-
-        #region Валидация
-
-        private bool TryParseTime(string hourText, string minuteText,
-            int minHour, int maxHour, int minMinute, int maxMinute,
-            out int hour, out int minute)
-        {
-            hour = 0;
-            minute = 0;
-
-            if (!int.TryParse(hourText, out hour) || hour < minHour || hour > maxHour)
-                return false;
-
-            if (!int.TryParse(minuteText, out minute) || minute < minMinute || minute > maxMinute)
-                return false;
-
-            return true;
-        }
-
-        private bool TryParseDecimal(string text, decimal min, decimal max, out decimal value)
-        {
-            value = 0m;
-            if (string.IsNullOrWhiteSpace(text)) return false;
-
-            text = text.Replace(",", ".");
-            if (!decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value))
-                return false;
-
-            return value >= min && value <= max;
-        }
-
-        private bool Fail(string message, UIElement element)
-        {
-            MessageBox.Show(message, "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
-            element.Focus();
-            return false;
-        }
-
-        #endregion
-
-        #region Вспомогательные методы
-
-        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        private void btnCancel_Click(object sender, RoutedEventArgs e)
         {
             DialogResult = false;
             Close();
         }
 
-        private void ShowError(string title, Exception ex)
-        {
-            MessageBox.Show($"{title}\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-        }
-
-        private void ShowInfo(string message)
-        {
-            MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
         #endregion
     }
 
-    // Extension method для FloatingHintHelper с DatePicker
-    public static class FloatingHintHelperExtensions
+    public class ParticipantViewModel
     {
-        public static void Attach(DatePicker datePicker, TextBlock hint, TranslateTransform transform)
-        {
-            datePicker.GotFocus += (s, e) => AnimateUp(hint, transform);
-            datePicker.LostFocus += (s, e) => UpdateState(datePicker, hint, transform);
-            datePicker.SelectedDateChanged += (s, e) => UpdateState(datePicker, hint, transform);
-
-            UpdateState(datePicker, hint, transform);
-        }
-
-        private static void UpdateState(DatePicker dp, TextBlock hint, TranslateTransform transform)
-        {
-            bool hasText = dp.SelectedDate.HasValue;
-            bool isFocused = dp.IsFocused;
-
-            if (hasText || isFocused)
-                AnimateUp(hint, transform);
-            else
-                AnimateDown(hint, transform);
-        }
-
-        private static void AnimateUp(TextBlock hint, TranslateTransform transform)
-        {
-            var anim = new DoubleAnimation
-            {
-                To = -24,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            transform.BeginAnimation(TranslateTransform.YProperty, anim);
-            hint.FontSize = 12;
-            hint.Foreground = new SolidColorBrush(Color.FromRgb(51, 153, 255));
-        }
-
-        private static void AnimateDown(TextBlock hint, TranslateTransform transform)
-        {
-            var anim = new DoubleAnimation
-            {
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-
-            transform.BeginAnimation(TranslateTransform.YProperty, anim);
-            hint.FontSize = 14;
-            hint.Foreground = new SolidColorBrush(Color.FromRgb(136, 136, 136));
-        }
+        public int RecordId { get; set; }
+        public int PersonId { get; set; }
+        public string FullName { get; set; }
+        public string AddedAt { get; set; }
     }
 }

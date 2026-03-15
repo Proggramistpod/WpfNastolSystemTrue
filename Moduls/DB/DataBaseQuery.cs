@@ -7,9 +7,24 @@
         class DataBaseQuery
         {
             private readonly DbManager dbManager = new DbManager();
+        public DataTable GetSessionParticipants(int sessionId)
+        {
+            string query = @"
+            SELECT 
+            sp.id,
+            sp.person_id,
+            p.full_name,
+            DATE_FORMAT(sp.joined_at, '%H:%i') AS joined_time,
+            IF(sp.confirmed = 1, 'Да', 'Нет') AS confirmed
+            FROM session_participants sp
+            JOIN persons p ON sp.person_id = p.person_id
+            WHERE sp.session_id = @session_id
+            ORDER BY sp.joined_at";
 
-            #region АВТОРИЗАЦИЯ
-            public string? AuthorizationUser(string login, string password)
+            return dbManager.Select(query, new Dictionary<string, object> { { "@session_id", sessionId } });
+        }
+        #region АВТОРИЗАЦИЯ
+        public string? AuthorizationUser(string login, string password)
             {
                 if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
                     return null;
@@ -133,34 +148,34 @@
                 string query = "DELETE FROM games WHERE game_id = @id";
                 dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
             }
-            #endregion
-
-        
-
-            #region СЕССИИ (предполагаемая таблица)
-            public DataTable GetSessionsForGrid()
-            {
-                string query = @"
-            SELECT
-                s.session_id,
-                p.full_name AS organizer_name,
-                t.table_number,
-                s.started_at,
-                s.ended_at,
-                s.cost,
-                s.paid,
-                s.payment_method,
-                s.notes
-            FROM sessions s
-            LEFT JOIN persons p ON s.person_id = p.person_id
-            LEFT JOIN tables t ON s.table_id = t.table_id
-            ORDER BY s.started_at DESC";
-                return dbManager.Select(query);
-            }
         #endregion
 
-            #region КАТЕГОРИИ
-            public DataTable GetAllCategories()
+
+
+        #region СЕССИИ (предполагаемая таблица)
+        public DataTable GetSessionsForGrid()
+        {
+            string query = @"
+            SELECT
+            s.session_id,
+            p.full_name AS organizer_name,
+            t.table_number,
+            s.started_at,
+            s.ended_at,
+            s.cost,
+            s.paid,
+            s.payment_method,
+            s.notes
+            FROM sessions s
+            LEFT JOIN persons p ON s.organizer_id = p.person_id
+            LEFT JOIN tables t ON s.table_id = t.table_id
+            ORDER BY s.started_at DESC";
+            return dbManager.Select(query);
+        }
+        #endregion
+
+        #region КАТЕГОРИИ
+        public DataTable GetAllCategories()
             {
                 string query = "SELECT category_id, name, description FROM categories ORDER BY name";
                 return dbManager.Select(query);
@@ -517,73 +532,27 @@
                 { "@person_id", personId }
                     });
             }
-            public DataTable GetPersonById(int id)
-            {
-                string query = @"
-            SELECT 
-                p.*,
-                a.login as account_login,
-                a.created_at as account_created_at
-            FROM persons p
-            LEFT JOIN accounts a ON p.person_id = a.person_id
-            WHERE p.person_id = @id";
-
-                return dbManager.Select(query,
-                    new Dictionary<string, object>
-                    {
-                { "@id", id }
-                    });
-            }
             #endregion
             #region СЕССИИ
 
             public DataTable GetSessionById(int id)
             {
                 string query = @"
-            SELECT 
-                s.*,
-                p.full_name as person_name,
-                t.table_number,
-                t.zone
-            FROM sessions s
-            LEFT JOIN persons p ON s.person_id = p.person_id
-            LEFT JOIN tables t ON s.table_id = t.table_id
-            WHERE s.session_id = @id";
+                    SELECT 
+                        s.*,
+                        p.full_name as organizer_name,
+                        t.table_number,
+                        t.zone
+                    FROM sessions s
+                    LEFT JOIN persons p ON s.organizer_id = p.person_id
+                    LEFT JOIN tables t ON s.table_id = t.table_id
+                    WHERE s.session_id = @id";
 
                 return dbManager.Select(query,
                     new Dictionary<string, object>
                     {
                 { "@id", id }
                     });
-            }
-
-            public void InsertSession(Dictionary<string, object> parameters)
-            {
-                string query = @"
-            INSERT INTO sessions
-            (person_id, table_id, started_at, ended_at, cost, paid, payment_method, created_by, notes)
-            VALUES
-            (@person_id, @table_id, @started_at, @ended_at, @cost, @paid, @payment_method, @created_by, @notes);
-            SELECT LAST_INSERT_ID();";
-
-                dbManager.Scalar(query, parameters);
-            }
-
-            public void UpdateSession(Dictionary<string, object> parameters)
-            {
-                string query = @"
-            UPDATE sessions SET
-                person_id = @person_id,
-                table_id = @table_id,
-                started_at = @started_at,
-                ended_at = @ended_at,
-                cost = @cost,
-                paid = @paid,
-                payment_method = @payment_method,
-                notes = @notes
-            WHERE session_id = @session_id";
-
-                dbManager.NonQuery(query, parameters);
             }
 
             public DataTable GetActiveSessions()
@@ -682,7 +651,7 @@
         {
             // Экранируем Condition обратными кавычками
             string query = @"INSERT INTO game_copies 
-        (game_id, inventory_number, acquired_date, location, is_available, condition, notes)
+        (game_id, inventory_number, acquired_date, location, is_available, conditions, notes)
         VALUES 
         (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
 
@@ -698,8 +667,9 @@
         acquired_date = @acquired_date,
         location = @location,
         is_available = @is_available,
-        condition = @condition,
-        notes = @notes
+        conditions = @condition,
+        notes = @notes,
+        play_time_min = @play_time_min
         WHERE copy_id = @copy_id";
 
             dbManager.NonQuery(query, parameters);
@@ -803,8 +773,89 @@
 
             dbManager.NonQuery(query, parameters);
         }
+        public int InsertSessionAndGetId(Dictionary<string, object> parameters)
+        {
+            string sql = @"
+        INSERT INTO sessions 
+        (organizer_id, table_id, started_at, ended_at, cost, paid, notes, created_by)
+        VALUES 
+        (@organizer_id, @table_id, @started_at, @ended_at, @cost, @paid, @notes, @created_by);
+        SELECT LAST_INSERT_ID();";
 
+            object result = dbManager.Scalar(sql, parameters);
+            return Convert.ToInt32(result);
+        }
+
+        public void UpdateSession(Dictionary<string, object> parameters)
+        {
+            string sql = @"
+        UPDATE sessions SET
+            organizer_id = @organizer_id,
+            table_id = @table_id,
+            started_at = @started_at,
+            ended_at = @ended_at,
+            cost = @cost,
+            paid = @paid,
+            notes = @notes
+        WHERE session_id = @session_id";
+
+            dbManager.NonQuery(sql, parameters);
+        }
+
+        public void ClearSessionParticipants(int sessionId)
+        {
+            dbManager.NonQuery(
+                "DELETE FROM session_participants WHERE session_id = @sid",
+                new Dictionary<string, object> { { "@sid", sessionId } }
+            );
+        }
+
+        public void AddParticipantToSession(int sessionId, int personId)
+        {
+            string sql = @"
+        INSERT IGNORE INTO session_participants 
+        (session_id, person_id, joined_at)
+        VALUES (@sid, @pid, NOW())";
+
+            dbManager.NonQuery(sql, new Dictionary<string, object>
+    {
+        { "@sid", sessionId },
+        { "@pid", personId }
+    });
+        }
         #endregion
+        // Получить всех гейммастеров (роль 4)
+        // Получить всех гейммастеров (роль 4) – для выбора организатора
+        public DataTable GetGameMasters(bool includeInactive = true)
+        {
+            string query = @"
+        SELECT person_id, full_name
+        FROM persons
+        WHERE role_id = 4" + (includeInactive ? "" : " AND is_banned = 0") + @"
+        ORDER BY full_name";
+            return dbManager.Select(query);
+        }
+
+        // Получить активных посетителей (роль 1, не забанены) – для добавления участников
+        public DataTable GetActiveVisitors()
+        {
+            string query = @"
+        SELECT person_id, full_name
+        FROM persons
+        WHERE role_id = 1 AND is_banned = 0
+        ORDER BY full_name";
+            return dbManager.Select(query);
+        }
+
+        // Получить человека по ID (для подгрузки организатора, если его нет в списке мастеров)
+        public DataTable GetPersonById(int personId)
+        {
+            string query = @"
+        SELECT person_id, full_name
+        FROM persons
+        WHERE person_id = @id";
+            return dbManager.Select(query, new Dictionary<string, object> { { "@id", personId } });
+        }
         #endregion
     }
 }
