@@ -216,25 +216,27 @@
                     ORDER BY table_number";
                 return dbManager.Select(query);
             }
-            #endregion
+        #endregion
 
-            #region АККАУНТЫ
-            public DataTable GetAccountsForGrid()
-            {
-                string query = @"
-                    SELECT
-                        a.account_id,
-                        a.login,
-                        p.full_name AS person_name,
-                        a.created_at
-                    FROM accounts a
-                    LEFT JOIN persons p ON a.person_id = p.person_id";
-                return dbManager.Select(query);
-            }
-            #endregion
+        #region АККАУНТЫ
+        public DataTable GetAccountsForGrid()
+        {
+            string query = @"
+        SELECT
+            a.account_id,
+            a.login,
+            p.full_name AS person_name,
+            a.created_at
+        FROM accounts a
+        INNER JOIN persons p ON a.person_id = p.person_id
+        WHERE p.role_id != 1 
+        ORDER BY p.full_name";
+            return dbManager.Select(query);
+        }
+        #endregion
 
-            #region РОЛИ
-            public DataTable GetRolesForGrid()
+        #region РОЛИ
+        public DataTable GetRolesForGrid()
             {
                 string query = "SELECT role_id, code, name, description FROM roles ORDER BY name";
                 return dbManager.Select(query);
@@ -276,8 +278,8 @@
                 };
                 dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
             }
-            #endregion
-            #region ПЕРСОНЫ (ПОЛНЫЙ ФУНКЦИОНАЛ)
+        #endregion
+        #region ПЕРСОНЫ (ПОЛНЫЙ ФУНКЦИОНАЛ)
             public DataTable GetPersonsForGrid()
             {
                 string query = @"
@@ -293,12 +295,13 @@
                 p.notes
             FROM persons p
             LEFT JOIN roles r ON p.role_id = r.role_id
+            WHERE p.role_id = 1   -- только обычные посетители
             ORDER BY p.full_name";
                 return dbManager.Select(query);
             }
 
 
-            public void InsertPerson(Dictionary<string, object> parameters)
+        public int InsertPerson(Dictionary<string, object> parameters)
             {
                 string insertQuery = @"
             INSERT INTO persons
@@ -307,7 +310,7 @@
             (@full_name, @role_id, @phone, @email, @birth_date, @is_banned, @notes, NOW());
             SELECT LAST_INSERT_ID();";
 
-                dbManager.Scalar(insertQuery, parameters);
+                return Convert.ToInt32(dbManager.Scalar(insertQuery, parameters));
             }
 
             public void UpdatePerson(Dictionary<string, object> parameters)
@@ -469,8 +472,7 @@
                 p.person_id,
                 p.full_name,
                 a.login,
-                DATE_FORMAT(a.created_at, '%d.%m.%Y %H:%i') as account_created,
-                DATE_FORMAT(a.last_login, '%d.%m.%Y %H:%i') as last_login
+                DATE_FORMAT(a.created_at, '%d.%m.%Y %H:%i') as account_created
             FROM persons p
             INNER JOIN accounts a ON p.person_id = a.person_id
             ORDER BY p.full_name";
@@ -848,13 +850,22 @@
         }
 
         // Получить человека по ID (для подгрузки организатора, если его нет в списке мастеров)
-        public DataTable GetPersonById(int personId)
+        public DataTable GetPersonById(int id)
         {
             string query = @"
-        SELECT person_id, full_name
+        SELECT
+            person_id,
+            full_name,
+            role_id,
+            phone,
+            email,
+            birth_date,
+            registered_at,
+            is_banned,
+            notes
         FROM persons
         WHERE person_id = @id";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@id", personId } });
+            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
         }
         #endregion
     }

@@ -25,7 +25,6 @@ namespace WpfNastolSystem.Forms.List
 
         private void InitializePage() => LoadTable("games");
 
-        private void ProfileButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Профиль");
         private void ThemButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Тема");
 
         #region Загрузка таблицы
@@ -67,11 +66,10 @@ namespace WpfNastolSystem.Forms.List
         {
             DataGrid.Columns.Clear();
 
-            // Колонки, которые не нужно показывать (ID и служебные даты)
             var hiddenColumns = new HashSet<string>
             {
                 "game_id", "person_id", "session_id", "category_id", "copy_id", "table_id", "account_id", "role_id",
-                "last_login", "created_at", "registered_at"
+                "created_at", "registered_at"
             };
 
             foreach (DataColumn column in table.Columns)

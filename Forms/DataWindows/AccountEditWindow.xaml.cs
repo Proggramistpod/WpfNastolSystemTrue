@@ -4,10 +4,10 @@ using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Animation;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
 
@@ -17,12 +17,16 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _accountId;
+        private int? _personId; // ID связанной записи persons
+        private bool _isDataChanged = false;
 
-        public class PersonItem
+        // Роль обычного пользователя, которую исключаем из выбора
+        private const int EXCLUDED_ROLE_ID = 1;
+
+        public class RoleItem
         {
             public int Id { get; set; }
-            public string FullName { get; set; } = string.Empty;
-            public override string ToString() => FullName ?? "(без имени)";
+            public string Name { get; set; } = string.Empty;
         }
 
         public AccountEditWindow(int? id = null)
@@ -30,126 +34,167 @@ namespace WpfNastolSystem.Forms.Edit
             InitializeComponent();
             _accountId = id;
             ConfigureWindow();
-            LoadPersons();
-            if (_accountId.HasValue)
-                LoadAccountData();
+            LoadRoles();
             AttachFloatingHints();
 
-            if (!_accountId.HasValue)
-                LoginTextBox.Focus();
+            if (_accountId.HasValue)
+                LoadAccountData();
+            else
+                FullNameTextBox.Focus();
+
+            Loaded += (s, e) => UpdateAllHints();
         }
 
         private void ConfigureWindow()
         {
             bool editMode = _accountId.HasValue;
-            Title = editMode ? "Редактирование аккаунта" : "Добавление аккаунта";
+            Title = editMode ? "Редактирование работника" : "Добавление работника";
             TitleText.Text = Title;
 
-            // В режиме редактирования скрываем поля пароля
             if (editMode)
             {
-                IsEditMode.Visibility = Visibility.Collapsed;
+                // Скрываем поля пароля
+                PasswordPanel.Visibility = Visibility.Collapsed;
+                ConfirmPasswordPanel.Visibility = Visibility.Collapsed;
+                InfoGrid.Visibility = Visibility.Visible;
             }
         }
 
         private void AttachFloatingHints()
         {
+            FloatingHintHelper.Attach(FullNameTextBox, HintFullName, FullNameTransform);
+            FloatingHintHelper.Attach(PhoneTextBox, HintPhone, PhoneTransform);
+            FloatingHintHelper.Attach(EmailTextBox, HintEmail, EmailTransform);
+            FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
             FloatingHintHelper.Attach(LoginTextBox, HintLogin, LoginTransform);
 
+            // DatePicker
+            BirthDatePicker.GotFocus += (s, e) => MoveHintUp(HintBirthDate, BirthDateTransform);
+            BirthDatePicker.LostFocus += (s, e) => UpdateDatePickerHint();
+            BirthDatePicker.SelectedDateChanged += (s, e) => UpdateDatePickerHint();
+
+            // PasswordBoxes (только при создании)
             if (!_accountId.HasValue)
             {
-                // Для PasswordBox нужна специальная обработка
-                PasswordBox.GotFocus += (s, e) => AnimateHintUp(HintPassword, PasswordTransform);
-                PasswordBox.LostFocus += (s, e) => UpdatePasswordHintState();
-                PasswordBox.PasswordChanged += (s, e) => UpdatePasswordHintState();
+                AttachPasswordBox(PasswordBox, HintPassword, PasswordTransform);
+                AttachPasswordBox(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
+            }
 
-                ConfirmPasswordBox.GotFocus += (s, e) => AnimateHintUp(HintConfirmPassword, ConfirmPasswordTransform);
-                ConfirmPasswordBox.LostFocus += (s, e) => UpdateConfirmPasswordHintState();
-                ConfirmPasswordBox.PasswordChanged += (s, e) => UpdateConfirmPasswordHintState();
+            // ComboBox
+            RoleComboBox.SelectionChanged += (s, e) => UpdateComboBoxHint();
+            RoleComboBox.GotFocus += (s, e) => UpdateComboBoxHint();
+            RoleComboBox.LostFocus += (s, e) => UpdateComboBoxHint();
+
+            // Отслеживание изменений
+            FullNameTextBox.TextChanged += OnFieldChanged;
+            PhoneTextBox.TextChanged += OnFieldChanged;
+            EmailTextBox.TextChanged += OnFieldChanged;
+            NotesTextBox.TextChanged += OnFieldChanged;
+            LoginTextBox.TextChanged += OnFieldChanged;
+            BirthDatePicker.SelectedDateChanged += OnFieldChanged;
+            IsBannedCheckBox.Checked += OnFieldChanged;
+            IsBannedCheckBox.Unchecked += OnFieldChanged;
+            RoleComboBox.SelectionChanged += OnFieldChanged;
+            if (!_accountId.HasValue)
+            {
+                PasswordBox.PasswordChanged += OnFieldChanged;
+                ConfirmPasswordBox.PasswordChanged += OnFieldChanged;
             }
         }
 
-        private void AnimateHintUp(TextBlock hint, TranslateTransform transform)
+        private void AttachPasswordBox(PasswordBox pb, TextBlock hint, TranslateTransform transform)
         {
-            var anim = new DoubleAnimation
-            {
-                To = -24,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            transform.BeginAnimation(TranslateTransform.YProperty, anim);
-            hint.FontSize = 12;
-            hint.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(51, 153, 255));
+            pb.GotFocus += (s, e) => MoveHintUp(hint, transform);
+            pb.LostFocus += (s, e) => UpdatePasswordHint(pb, hint, transform);
+            pb.PasswordChanged += (s, e) => UpdatePasswordHint(pb, hint, transform);
         }
 
-        private void AnimateHintDown(TextBlock hint, TranslateTransform transform)
+        private void MoveHintUp(TextBlock hint, TranslateTransform transform)
         {
-            var anim = new DoubleAnimation
-            {
-                To = 0,
-                Duration = TimeSpan.FromMilliseconds(200),
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            transform.BeginAnimation(TranslateTransform.YProperty, anim);
+            transform.Y = -24;
+            hint.FontSize = 12;
+            hint.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryBlue");
+        }
+
+        private void MoveHintDown(TextBlock hint, TranslateTransform transform)
+        {
+            transform.Y = 0;
             hint.FontSize = 14;
             hint.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136));
         }
 
-        private void UpdatePasswordHintState()
+        private void UpdatePasswordHint(PasswordBox pb, TextBlock hint, TranslateTransform transform)
         {
-            if (PasswordBox.Password.Length > 0 || PasswordBox.IsFocused)
-                AnimateHintUp(HintPassword, PasswordTransform);
+            if (pb.SecurePassword.Length > 0 || pb.IsFocused)
+                MoveHintUp(hint, transform);
             else
-                AnimateHintDown(HintPassword, PasswordTransform);
+                MoveHintDown(hint, transform);
         }
 
-        private void UpdateConfirmPasswordHintState()
+        private void UpdateDatePickerHint()
         {
-            if (ConfirmPasswordBox.Password.Length > 0 || ConfirmPasswordBox.IsFocused)
-                AnimateHintUp(HintConfirmPassword, ConfirmPasswordTransform);
+            if (BirthDatePicker.SelectedDate.HasValue)
+                MoveHintUp(HintBirthDate, BirthDateTransform);
             else
-                AnimateHintDown(HintConfirmPassword, ConfirmPasswordTransform);
+                MoveHintDown(HintBirthDate, BirthDateTransform);
         }
 
-        private void LoadPersons()
+        private void UpdateComboBoxHint()
+        {
+            // Для ComboBox подсказка не используется, но можно оставить как есть
+        }
+
+        private void UpdateAllHints()
+        {
+            if (!string.IsNullOrEmpty(FullNameTextBox.Text))
+                MoveHintUp(HintFullName, FullNameTransform);
+            if (!string.IsNullOrEmpty(PhoneTextBox.Text))
+                MoveHintUp(HintPhone, PhoneTransform);
+            if (!string.IsNullOrEmpty(EmailTextBox.Text))
+                MoveHintUp(HintEmail, EmailTransform);
+            if (!string.IsNullOrEmpty(NotesTextBox.Text))
+                MoveHintUp(HintNotes, NotesTransform);
+            if (!string.IsNullOrEmpty(LoginTextBox.Text))
+                MoveHintUp(HintLogin, LoginTransform);
+            UpdateDatePickerHint();
+            if (!_accountId.HasValue)
+            {
+                UpdatePasswordHint(PasswordBox, HintPassword, PasswordTransform);
+                UpdatePasswordHint(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
+            }
+        }
+
+        private void OnFieldChanged(object sender, EventArgs e)
+        {
+            _isDataChanged = true;
+            SaveButton.IsEnabled = true;
+        }
+
+        private void LoadRoles()
         {
             try
             {
-                // Загружаем пользователей без аккаунтов (для создания) или всех (для редактирования)
-                DataTable table;
-                if (_accountId.HasValue)
-                {
-                    table = _db.GetPersonsForGrid();
-                }
-                else
-                {
-                    table = _db.GetPersonsWithoutAccounts();
-                }
+                var table = _db.GetRolesForGrid();
+                var roles = new List<RoleItem>();
 
-                if (table == null || table.Rows.Count == 0)
-                {
-                    MessageBox.Show("Нет доступных пользователей для создания аккаунта.");
-                    PersonComboBox.IsEnabled = false;
-                    return;
-                }
-
-                var items = new List<PersonItem>();
                 foreach (DataRow row in table.Rows)
                 {
-                    items.Add(new PersonItem
+                    int id = Convert.ToInt32(row["role_id"]);
+                    if (id == EXCLUDED_ROLE_ID) continue; // исключаем обычных пользователей
+
+                    roles.Add(new RoleItem
                     {
-                        Id = Convert.ToInt32(row["person_id"]),
-                        FullName = row["full_name"]?.ToString() ?? "(без имени)"
+                        Id = id,
+                        Name = row["name"]?.ToString() ?? "Без названия"
                     });
                 }
-                PersonComboBox.ItemsSource = items;
-                PersonComboBox.DisplayMemberPath = nameof(PersonItem.FullName);
-                PersonComboBox.SelectedValuePath = nameof(PersonItem.Id);
+
+                RoleComboBox.ItemsSource = roles;
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка при загрузке пользователей:\n" + ex.Message);
-                PersonComboBox.IsEnabled = false;
+                ShowError("Ошибка загрузки ролей", ex);
+                RoleComboBox.IsEnabled = false;
             }
         }
 
@@ -157,46 +202,142 @@ namespace WpfNastolSystem.Forms.Edit
         {
             try
             {
-                var table = GetAccountById(_accountId!.Value);
-                if (table.Rows.Count == 0) return;
-
-                var row = table.Rows[0];
-                PersonComboBox.SelectedValue = Convert.ToInt32(row["person_id"]);
-                LoginTextBox.Text = row["login"]?.ToString() ?? "";
-
-                if (row["created_at"] != DBNull.Value)
+                // Получаем данные аккаунта
+                var accountTable = _db.GetAccountById(_accountId!.Value);
+                if (accountTable.Rows.Count == 0)
                 {
-                    CreatedAtText.Text = Convert.ToDateTime(row["created_at"]).ToString("dd.MM.yyyy HH:mm");
+                    MessageBox.Show("Аккаунт не найден", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Close();
+                    return;
                 }
+
+                var accRow = accountTable.Rows[0];
+                _personId = Convert.ToInt32(accRow["person_id"]);
+                LoginTextBox.Text = accRow["login"]?.ToString() ?? "";
+                CreatedAtText.Text = accRow["created_at"] != DBNull.Value
+                    ? Convert.ToDateTime(accRow["created_at"]).ToString("dd.MM.yyyy HH:mm")
+                    : "Не указано";
+
+                // Получаем данные персоны
+                var personTable = _db.GetPersonById(_personId.Value);
+                if (personTable.Rows.Count == 0)
+                {
+                    MessageBox.Show("Связанный пользователь не найден", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Close();
+                    return;
+                }
+
+                var perRow = personTable.Rows[0];
+                FullNameTextBox.Text = perRow["full_name"]?.ToString() ?? "";
+                RoleComboBox.SelectedValue = perRow["role_id"];
+                PhoneTextBox.Text = perRow["phone"]?.ToString() ?? "";
+                EmailTextBox.Text = perRow["email"]?.ToString() ?? "";
+                if (perRow["birth_date"] != DBNull.Value && DateTime.TryParse(perRow["birth_date"].ToString(), out var bd))
+                    BirthDatePicker.SelectedDate = bd;
+                IsBannedCheckBox.IsChecked = perRow["is_banned"] != DBNull.Value && Convert.ToBoolean(perRow["is_banned"]);
+                NotesTextBox.Text = perRow["notes"]?.ToString() ?? "";
+
+                _isDataChanged = false;
+                SaveButton.IsEnabled = false;
             }
             catch (Exception ex)
             {
-                ShowError("Ошибка загрузки данных аккаунта", ex);
+                ShowError("Ошибка загрузки данных", ex);
             }
         }
 
-        private DataTable GetAccountById(int id)
+        private bool ValidateFields()
         {
-            string query = @"SELECT * FROM accounts WHERE account_id = @id";
-            return new DbManager().Select(query, new Dictionary<string, object> { { "@id", id } });
+            // Роль
+            if (RoleComboBox.SelectedValue == null)
+                return ShowWarning("Выберите роль", RoleComboBox);
+
+            // ФИО
+            if (string.IsNullOrWhiteSpace(FullNameTextBox.Text))
+                return ShowWarning("Введите ФИО", FullNameTextBox);
+
+            // Телефон
+            if (string.IsNullOrWhiteSpace(PhoneTextBox.Text))
+                return ShowWarning("Введите номер телефона", PhoneTextBox);
+            string cleanPhone = new string(PhoneTextBox.Text.Where(char.IsDigit).ToArray());
+            if (cleanPhone.Length < 10 || !cleanPhone.All(char.IsDigit))
+                return ShowWarning("Некорректный номер телефона", PhoneTextBox);
+
+            // Email
+            if (string.IsNullOrWhiteSpace(EmailTextBox.Text))
+                return ShowWarning("Введите email", EmailTextBox);
+            if (!IsValidEmail(EmailTextBox.Text))
+                return ShowWarning("Некорректный email", EmailTextBox);
+
+            // Дата рождения
+            if (!BirthDatePicker.SelectedDate.HasValue)
+                return ShowWarning("Укажите дату рождения", BirthDatePicker);
+            if (BirthDatePicker.SelectedDate.Value > DateTime.Now)
+                return ShowWarning("Дата рождения не может быть в будущем", BirthDatePicker);
+            if (BirthDatePicker.SelectedDate.Value < DateTime.Now.AddYears(-120))
+                return ShowWarning("Некорректная дата рождения", BirthDatePicker);
+
+            // Логин
+            if (string.IsNullOrWhiteSpace(LoginTextBox.Text))
+                return ShowWarning("Введите логин", LoginTextBox);
+            if (LoginTextBox.Text.Length > 50)
+                return ShowWarning("Логин не может быть длиннее 50 символов", LoginTextBox);
+
+
+            // Для нового аккаунта проверяем пароль
+            if (!_accountId.HasValue)
+            {
+                if (PasswordBox.SecurePassword.Length == 0)
+                    return ShowWarning("Введите пароль", PasswordBox);
+                if (PasswordBox.SecurePassword.Length < 6)
+                    return ShowWarning("Пароль должен быть не менее 6 символов", PasswordBox);
+                if (PasswordBox.Password != ConfirmPasswordBox.Password)
+                    return ShowWarning("Пароли не совпадают", ConfirmPasswordBox);
+            }
+
+            return true;
+        }
+
+        private bool IsValidEmail(string email)
+        {
+            try
+            {
+                var pattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+                return Regex.IsMatch(email, pattern, RegexOptions.IgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool ShowWarning(string message, UIElement element)
+        {
+            MessageBox.Show(message, "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
+            element.Focus();
+            return false;
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryValidate(out var accountData))
+            if (!ValidateFields())
                 return;
 
             try
             {
                 if (_accountId.HasValue)
                 {
-                    UpdateAccount(accountData);
-                    ShowInfo("Аккаунт успешно обновлен");
+                    // Обновление существующего работника
+                    UpdatePerson();
+                    UpdateAccount();
+                    ShowInfo("Данные обновлены");
                 }
                 else
                 {
-                    InsertAccount(accountData);
-                    ShowInfo("Аккаунт успешно создан");
+                    // Создание нового работника
+                    int newPersonId = InsertPerson();
+                    InsertAccount(newPersonId);
+                    ShowInfo("Работник добавлен");
                 }
 
                 DialogResult = true;
@@ -204,115 +345,82 @@ namespace WpfNastolSystem.Forms.Edit
             }
             catch (Exception ex)
             {
-                ShowError("Ошибка при сохранении", ex);
+                ShowError("Ошибка сохранения", ex);
             }
         }
 
-        private void InsertAccount(Dictionary<string, object> parameters)
+        private int InsertPerson()
         {
-            string query = @"INSERT INTO accounts 
-                (person_id, login, password, created_at)
-                VALUES 
-                (@person_id, @login, @password, NOW())";
-
-            new DbManager().NonQuery(query, parameters);
-        }
-
-        private void UpdateAccount(Dictionary<string, object> parameters)
-        {
-            string query = @"UPDATE accounts SET
-                person_id = @person_id,
-                login = @login
-                WHERE account_id = @account_id";
-
-            new DbManager().NonQuery(query, parameters);
-        }
-
-        private bool TryValidate(out Dictionary<string, object> parameters)
-        {
-            parameters = new Dictionary<string, object>();
-
-            if (PersonComboBox.SelectedValue == null)
-                return Fail("Выберите пользователя", PersonComboBox);
-
-            if (string.IsNullOrWhiteSpace(LoginTextBox.Text))
-                return Fail("Введите логин", LoginTextBox);
-
-            // Проверка длины login (VARCHAR(50))
-            if (LoginTextBox.Text.Trim().Length > 50)
-                return Fail("Логин не может быть длиннее 50 символов", LoginTextBox);
-
-            if (!IsLoginUnique(LoginTextBox.Text.Trim(), _accountId))
-                return Fail("Этот логин уже занят", LoginTextBox);
-
-            // Для нового аккаунта проверяем пароль
-            if (!_accountId.HasValue)
+            var parameters = new Dictionary<string, object>
             {
-                if (string.IsNullOrWhiteSpace(PasswordBox.Password))
-                    return Fail("Введите пароль", PasswordBox);
-
-                if (PasswordBox.Password.Length < 6)
-                    return Fail("Пароль должен быть не менее 6 символов", PasswordBox);
-
-                if (PasswordBox.Password != ConfirmPasswordBox.Password)
-                    return Fail("Пароли не совпадают", ConfirmPasswordBox);
-
-                // Проверка длины password (VARCHAR(255) для хеша)
-                if (PasswordBox.Password.Length > 50) // До хеширования
-                    return Fail("Пароль слишком длинный", PasswordBox);
-            }
-
-            parameters = new Dictionary<string, object>
-            {
-                ["@person_id"] = PersonComboBox.SelectedValue,
-                ["@login"] = LoginTextBox.Text.Trim()
+                ["@full_name"] = FullNameTextBox.Text.Trim(),
+                ["@role_id"] = RoleComboBox.SelectedValue,
+                ["@phone"] = PhoneTextBox.Text.Trim(),
+                ["@email"] = EmailTextBox.Text.Trim(),
+                ["@birth_date"] = BirthDatePicker.SelectedDate.Value,
+                ["@is_banned"] = IsBannedCheckBox.IsChecked ?? false,
+                ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text) ? DBNull.Value : NotesTextBox.Text.Trim()
             };
-
-            if (!_accountId.HasValue)
-            {
-                parameters["@password"] = HashPassword(PasswordBox.Password);
-            }
-            else
-            {
-                parameters["@account_id"] = _accountId.Value;
-            }
-
-            return true;
+            return _db.InsertPerson(parameters);
         }
 
-        private bool IsLoginUnique(string login, int? excludeAccountId)
+        private void UpdatePerson()
         {
-            string query = @"SELECT COUNT(*) FROM accounts WHERE login = @login" +
-                          (excludeAccountId.HasValue ? " AND account_id != @account_id" : "");
+            var parameters = new Dictionary<string, object>
+            {
+                ["@person_id"] = _personId!.Value,
+                ["@full_name"] = FullNameTextBox.Text.Trim(),
+                ["@role_id"] = RoleComboBox.SelectedValue,
+                ["@phone"] = PhoneTextBox.Text.Trim(),
+                ["@email"] = EmailTextBox.Text.Trim(),
+                ["@birth_date"] = BirthDatePicker.SelectedDate.Value,
+                ["@is_banned"] = IsBannedCheckBox.IsChecked ?? false,
+                ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text) ? DBNull.Value : NotesTextBox.Text.Trim()
+            };
+            _db.UpdatePerson(parameters);
+        }
 
-            var parameters = new Dictionary<string, object> { { "@login", login } };
-            if (excludeAccountId.HasValue)
-                parameters["@account_id"] = excludeAccountId.Value;
+        private void InsertAccount(int personId)
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                ["@person_id"] = personId,
+                ["@login"] = LoginTextBox.Text.Trim(),
+                ["@password"] = HashPassword(PasswordBox.Password)
+            };
+            _db.InsertAccount(parameters);
+        }
 
-            object result = new DbManager().Scalar(query, parameters);
-            return Convert.ToInt32(result) == 0;
+        private void UpdateAccount()
+        {
+            var parameters = new Dictionary<string, object>
+            {
+                ["@account_id"] = _accountId!.Value,
+                ["@login"] = LoginTextBox.Text.Trim()
+                // пароль не меняем
+            };
+            _db.UpdateAccount(parameters);
         }
 
         private string HashPassword(string password)
         {
-            // Простое хеширование SHA256 для примера
-            // В реальном проекте лучше использовать BCrypt или другой надежный алгоритм
             using (var sha256 = SHA256.Create())
             {
-                var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-                return Convert.ToBase64String(hashedBytes);
+                var bytes = Encoding.UTF8.GetBytes(password);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
             }
-        }
-
-        private bool Fail(string message, UIElement element)
-        {
-            MessageBox.Show(message, "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
-            element.Focus();
-            return false;
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
+            if (_isDataChanged)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
             DialogResult = false;
             Close();
         }
@@ -325,6 +433,18 @@ namespace WpfNastolSystem.Forms.Edit
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
     }
 }
