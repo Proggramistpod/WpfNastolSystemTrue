@@ -86,7 +86,6 @@ namespace WpfNastolSystem.Forms.Edit
         private void AttachFloatingHints()
         {
             FloatingHintHelper.Attach(InventoryNumberTextBox, HintInventoryNumber, InventoryNumberTransform);
-            FloatingHintHelper.Attach(AcquiredDatePicker, HintAcquiredDate, AcquiredDateTransform);
             FloatingHintHelper.Attach(LocationTextBox, HintLocation, LocationTransform);
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
         }
@@ -276,8 +275,7 @@ namespace WpfNastolSystem.Forms.Edit
                 ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0,
                 ["@condition"] = selectedCondition.ToString(), // Сохраняем как 'good', 'fair' или 'bad'
                 ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text)
-                    ? DBNull.Value : NotesTextBox.Text.Trim(),
-                ["play_time_min"] = PricePerMinuteTextBox.Text
+                    ? DBNull.Value : NotesTextBox.Text.Trim()
             };
 
             return true;

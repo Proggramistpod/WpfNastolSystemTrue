@@ -1,6 +1,7 @@
 ﻿    using System;
     using System.Collections.Generic;
     using System.Data;
+using WpfNastolSystem.Moduls.CurrentUser;
 
     namespace WpfNastolSystem.Moduls.DB
     {
@@ -25,25 +26,47 @@
         }
         #region АВТОРИЗАЦИЯ
         public string? AuthorizationUser(string login, string password)
+        {
+            if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
             {
-                if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
-                    return null;
-
-                object? result = dbManager.Scalar(
-                    @"SELECT login
-                      FROM accounts
-                      WHERE login = @login AND password = @password",
-                    new Dictionary<string, object>
-                    {
-                        { "@login", login },
-                        { "@password", password }
-                    });
-                return result as string;
+                DataCurrentUser.Clear();
+                return null;
             }
-            #endregion
 
-            #region ИГРЫ
-            public DataTable GetGamesForGrid()
+            string query = @"
+            SELECT 
+                COALESCE(r.code, 'visitor') AS role_code
+            FROM accounts a
+            INNER JOIN persons p ON a.person_id = p.person_id
+            LEFT JOIN  roles  r ON p.role_id   = r.role_id
+            WHERE a.login    = @login 
+              AND a.password = @password
+            LIMIT 1";
+
+            var parameters = new Dictionary<string, object>
+            {
+                { "@login",    login.Trim() },
+                { "@password", password }     // ← потом обязательно перейди на хеш!
+            };
+
+            object? roleCodeObj = dbManager.Scalar(query, parameters);
+
+            if (roleCodeObj == null)
+            {
+                DataCurrentUser.Clear();
+                return null;
+            }
+
+            string roleCode = (roleCodeObj as string ?? "visitor").ToLowerInvariant();
+
+            DataCurrentUser.SetUser(roleCode);   // или просто SetRole(roleCode), если метод переименуешь
+
+            return login;   // успех → возвращаем логин, как было в оригинале
+        }
+        #endregion
+
+        #region ИГРЫ
+        public DataTable GetGamesForGrid()
             {
                 string query = @"
                     SELECT
@@ -654,26 +677,24 @@
         {
             // Экранируем Condition обратными кавычками
             string query = @"INSERT INTO game_copies 
-        (game_id, inventory_number, acquired_date, location, is_available, conditions, notes)
-        VALUES 
-        (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
+            (game_id, inventory_number, acquired_date, location, is_available, conditions, notes)
+            VALUES 
+            (@game_id, @inventory_number, @acquired_date, @location, @is_available, @condition, @notes)";
 
             dbManager.NonQuery(query, parameters);
         }
 
         public void UpdateGameCopy(Dictionary<string, object> parameters)
         {
-            // Экранируем Condition обратными кавычками
             string query = @"UPDATE game_copies SET
-        game_id = @game_id,
-        inventory_number = @inventory_number,
-        acquired_date = @acquired_date,
-        location = @location,
-        is_available = @is_available,
-        conditions = @condition,
-        notes = @notes,
-        play_time_min = @play_time_min
-        WHERE copy_id = @copy_id";
+                game_id = @game_id,
+                inventory_number = @inventory_number,
+                acquired_date = @acquired_date,
+                location = @location,
+                is_available = @is_available,
+                conditions = @condition,
+                notes = @notes
+                WHERE copy_id = @copy_id";
 
             dbManager.NonQuery(query, parameters);
         }

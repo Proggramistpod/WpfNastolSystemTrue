@@ -68,10 +68,8 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void AttachFloatingHints()
         {
-            FloatingHintHelper.Attach(dpStartDate, HintStartDate, StartDateTransform);
             FloatingHintHelper.Attach(tbStartHour, HintStartTime, StartTimeTransform);
             FloatingHintHelper.Attach(tbStartMinute, HintStartTime, StartTimeTransform);
-            FloatingHintHelper.Attach(dpEndDate, HintEndDate, EndDateTransform);
             FloatingHintHelper.Attach(tbEndHour, HintEndTime, EndTimeTransform);
             FloatingHintHelper.Attach(tbEndMinute, HintEndTime, EndTimeTransform);
             FloatingHintHelper.Attach(tbNotes, HintNotes, NotesTransform);

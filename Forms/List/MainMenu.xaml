@@ -6,7 +6,7 @@
       mc:Ignorable="d"
       Title="Главное меню"
       Background="#EEF6FF" Height="936" Width="1466">
-    <Grid>
+    <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="*"/>
@@ -62,9 +62,9 @@
                     <Separator Margin="16,10" Background="{StaticResource BorderBlue}"/>
 
                     <!-- Кнопка настроек -->
-                    <Button Content="Смена темы" 
+                    <Button Content="ДОКУМЕНТЫ" 
                             Style="{StaticResource ModernMenuButtonStyle}"
-                            Click="ThemButton_Click"/>
+                            Click="DocsButton_Click"/>
 
                     <!-- Выход -->
                     <Button Content="🚪 Выход" 

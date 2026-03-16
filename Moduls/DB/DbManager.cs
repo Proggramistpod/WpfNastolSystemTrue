@@ -5,6 +5,7 @@ using MySql.Data.MySqlClient;
 
 namespace WpfNastolSystem.Moduls.DB
 {
+
     internal class DbManager
     {
         private readonly string _connectionString = 

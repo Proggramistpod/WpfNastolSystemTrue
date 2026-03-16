@@ -52,17 +52,12 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(EmailTextBox, HintEmail, EmailTransform);
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
 
-            // Для DatePicker своя логика
-            BirthDatePicker.GotFocus += (s, e) => MoveHintUp(HintBirthDate, BirthDateTransform);
-            BirthDatePicker.LostFocus += (s, e) => UpdateDatePickerHint();
-            BirthDatePicker.SelectedDateChanged += (s, e) => UpdateDatePickerHint();
 
             // Отслеживание изменений
             FullNameTextBox.TextChanged += OnFieldChanged;
             PhoneTextBox.TextChanged += OnFieldChanged;
             EmailTextBox.TextChanged += OnFieldChanged;
             NotesTextBox.TextChanged += OnFieldChanged;
-            BirthDatePicker.SelectedDateChanged += OnFieldChanged;
             IsBannedCheckBox.Checked += OnFieldChanged;
             IsBannedCheckBox.Unchecked += OnFieldChanged;
         }
@@ -74,19 +69,9 @@ namespace WpfNastolSystem.Forms.Edit
             hint.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryBlue");
         }
 
-        private void MoveHintDown(TextBlock hint, TranslateTransform transform)
-        {
-            transform.Y = 0;
-            hint.FontSize = 14;
-            hint.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136));
-        }
-
         private void UpdateDatePickerHint()
         {
-            if (BirthDatePicker.SelectedDate.HasValue)
-                MoveHintUp(HintBirthDate, BirthDateTransform);
-            else
-                MoveHintDown(HintBirthDate, BirthDateTransform);
+            
         }
 
         private void UpdateAllHints()

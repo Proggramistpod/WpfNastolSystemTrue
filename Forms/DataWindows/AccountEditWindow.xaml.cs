@@ -70,10 +70,6 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
             FloatingHintHelper.Attach(LoginTextBox, HintLogin, LoginTransform);
 
-            // DatePicker
-            BirthDatePicker.GotFocus += (s, e) => MoveHintUp(HintBirthDate, BirthDateTransform);
-            BirthDatePicker.LostFocus += (s, e) => UpdateDatePickerHint();
-            BirthDatePicker.SelectedDateChanged += (s, e) => UpdateDatePickerHint();
 
             // PasswordBox (всегда активны)
             AttachPasswordBox(PasswordBox, HintPassword, PasswordTransform);
@@ -90,7 +86,6 @@ namespace WpfNastolSystem.Forms.Edit
             EmailTextBox.TextChanged += OnFieldChanged;
             NotesTextBox.TextChanged += OnFieldChanged;
             LoginTextBox.TextChanged += OnFieldChanged;
-            BirthDatePicker.SelectedDateChanged += OnFieldChanged;
             IsBannedCheckBox.Checked += OnFieldChanged;
             IsBannedCheckBox.Unchecked += OnFieldChanged;
             RoleComboBox.SelectionChanged += OnFieldChanged;
@@ -127,13 +122,6 @@ namespace WpfNastolSystem.Forms.Edit
                 MoveHintDown(hint, transform);
         }
 
-        private void UpdateDatePickerHint()
-        {
-            if (BirthDatePicker.SelectedDate.HasValue)
-                MoveHintUp(HintBirthDate, BirthDateTransform);
-            else
-                MoveHintDown(HintBirthDate, BirthDateTransform);
-        }
 
         private void UpdateComboBoxHint() { } // не используется
 
@@ -149,7 +137,6 @@ namespace WpfNastolSystem.Forms.Edit
                 MoveHintUp(HintNotes, NotesTransform);
             if (!string.IsNullOrEmpty(LoginTextBox.Text))
                 MoveHintUp(HintLogin, LoginTransform);
-            UpdateDatePickerHint();
             UpdatePasswordHint(PasswordBox, HintPassword, PasswordTransform);
             UpdatePasswordHint(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
         }

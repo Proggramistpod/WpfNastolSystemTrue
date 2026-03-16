@@ -5,15 +5,16 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="Редактирование сессии"
-        Height="1071" 
-    Width="629"
+        Height="731"
+        Width="629"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
         Background="#EEF6FF">
+
     <Window.Resources>
-        <!-- Если нужно — можно добавить локальные стили, но здесь используем существующие -->
     </Window.Resources>
+
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -21,13 +22,11 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Заголовок -->
         <TextBlock x:Name="tbTitle"
                    Text="Добавление сессии"
                    Style="{StaticResource PageTitleStyle}"
                    Margin="0,0,0,24"/>
 
-        <!-- Контент -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
 
@@ -37,12 +36,13 @@
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
+
                 <ComboBox x:Name="cmbOrganizer"
-                  Style="{StaticResource FilterComboBoxStyle}"
-                  Height="48"
-                  DisplayMemberPath="Name"
-                  SelectedValuePath="Id"
-                  Margin="0,0,0,16"/>
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          DisplayMemberPath="Name"
+                          SelectedValuePath="Id"
+                          Margin="0,0,0,16"/>
 
                 <!-- Стол -->
                 <TextBlock Text="Стол *"
@@ -50,32 +50,37 @@
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
+
                 <ComboBox x:Name="cmbTable"
-          Style="{StaticResource FilterComboBoxStyle}"
-          Height="48"
-          DisplayMemberPath="DisplayText"
-          SelectedValuePath="table_id"
-          TextSearch.TextPath="DisplayText"
-          Margin="0,0,0,16"/>
+                          Style="{StaticResource FilterComboBoxStyle}"
+                          Height="48"
+                          DisplayMemberPath="DisplayText"
+                          SelectedValuePath="table_id"
+                          TextSearch.TextPath="DisplayText"
+                          Margin="0,0,0,16"/>
 
                 <!-- Дата начала -->
+                <TextBlock Text="Дата начала"
+                           FontSize="14"
+                           FontWeight="Medium"
+                           Foreground="{StaticResource TextBlueDark}"
+                           Margin="0,0,0,8"/>
+
                 <Grid Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
-                    <TextBlock x:Name="HintStartDate"
-                               Text="Дата начала"
-                               Style="{StaticResource FloatingHintTextBoxStyle}">
-                        <TextBlock.RenderTransform>
-                            <TranslateTransform x:Name="StartDateTransform"/>
-                        </TextBlock.RenderTransform>
-                    </TextBlock>
                     <DatePicker x:Name="dpStartDate"
-                                Style="{StaticResource ModernDatePickerStyle}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                FontSize="15"
+                                Padding="16,12,16,0"
+                                VerticalContentAlignment="Center"
                                 Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Время начала -->
                 <Grid Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
+
                     <TextBlock x:Name="HintStartTime"
                                Text="Время начала (HH:MM)"
                                Style="{StaticResource FloatingHintTextBoxStyle}">
@@ -83,23 +88,29 @@
                             <TranslateTransform x:Name="StartTimeTransform"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
+
                     <StackPanel Orientation="Horizontal"
                                 Margin="16,18,0,10">
+
                         <TextBox x:Name="tbStartHour"
-                                 Width="29"
+                                 Width="25"
                                  MaxLength="2"
                                  BorderThickness="0"
                                  Background="Transparent"
-                                 FontSize="15" Height="26"/>
+                                 FontSize="15"
+                                 Height="18"/>
+
                         <TextBlock Text=":"
                                    Margin="4,0"
                                    VerticalAlignment="Center"/>
+
                         <TextBox x:Name="tbStartMinute"
-                                 Width="31"
+                                 Width="27"
                                  MaxLength="2"
                                  BorderThickness="0"
                                  Background="Transparent"
-                                 FontSize="15" Height="28"/>
+                                 FontSize="15"
+                                 Height="18"/>
                     </StackPanel>
                 </Grid>
 
@@ -117,30 +128,34 @@
                 <Grid x:Name="gridEndTime"
                       Margin="0,0,0,16"
                       IsEnabled="False">
+
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="62"/>
                         <RowDefinition Height="62"/>
                     </Grid.RowDefinitions>
 
-                    <!-- Дата окончания -->
-                    <Grid>
+                    <TextBlock Text="Дата окончания"
+                               FontSize="14"
+                               FontWeight="Medium"
+                               Foreground="{StaticResource TextBlueDark}"
+                               Margin="0,0,0,8"/>
+
+                    <Grid Grid.Row="1">
                         <Border Style="{StaticResource InputBorderStyle}"/>
-                        <TextBlock x:Name="HintEndDate"
-                                   Text="Дата окончания"
-                                   Style="{StaticResource FloatingHintTextBoxStyle}">
-                            <TextBlock.RenderTransform>
-                                <TranslateTransform x:Name="EndDateTransform"/>
-                            </TextBlock.RenderTransform>
-                        </TextBlock>
                         <DatePicker x:Name="dpEndDate"
-                                    Text =""
-                                    Style="{StaticResource ModernDatePickerStyle}"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    FontSize="15"
+                                    Padding="16,12,16,0"
+                                    VerticalContentAlignment="Center"
                                     Margin="0,0,0,10"/>
                     </Grid>
 
                     <!-- Время окончания -->
-                    <Grid Grid.Row="1">
+                    <Grid Grid.Row="2">
                         <Border Style="{StaticResource InputBorderStyle}"/>
+
                         <TextBlock x:Name="HintEndTime"
                                    Text="Время окончания (HH:MM)"
                                    Style="{StaticResource FloatingHintTextBoxStyle}">
@@ -148,25 +163,32 @@
                                 <TranslateTransform x:Name="EndTimeTransform"/>
                             </TextBlock.RenderTransform>
                         </TextBlock>
+
                         <StackPanel Orientation="Horizontal"
                                     Margin="16,18,0,10">
+
                             <TextBox x:Name="tbEndHour"
-                                     Width="40"
+                                     Width="25"
                                      MaxLength="2"
                                      BorderThickness="0"
                                      Background="Transparent"
-                                     FontSize="15"/>
+                                     FontSize="15"
+                                     Height="18"/>
+
                             <TextBlock Text=":"
                                        Margin="4,0"
                                        VerticalAlignment="Center"/>
+
                             <TextBox x:Name="tbEndMinute"
-                                     Width="40"
+                                     Width="26"
                                      MaxLength="2"
                                      BorderThickness="0"
                                      Background="Transparent"
-                                     FontSize="15"/>
+                                     FontSize="15"
+                                     Height="18"/>
                         </StackPanel>
                     </Grid>
+
                 </Grid>
 
                 <!-- Участники -->
@@ -175,15 +197,18 @@
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
                            Margin="0,0,0,8"/>
+
                 <StackPanel Orientation="Horizontal"
                             Margin="0,0,0,12">
+
                     <ComboBox x:Name="cmbAddParticipant"
-              Style="{StaticResource FilterComboBoxStyle}"
-              Width="320"
-              Height="48"
-              DisplayMemberPath="Name"
-              SelectedValuePath="Id"
-              IsEditable="False"/>
+                              Style="{StaticResource FilterComboBoxStyle}"
+                              Width="320"
+                              Height="48"
+                              DisplayMemberPath="Name"
+                              SelectedValuePath="Id"
+                              IsEditable="False"/>
+
                     <Button Content="+"
                             Width="48"
                             Height="48"
@@ -191,17 +216,22 @@
                             Style="{StaticResource CustomBlueButtonStyle}"
                             Click="btnAddParticipant_Click"/>
                 </StackPanel>
+
                 <ListView x:Name="lvParticipants"
                           Height="160"
                           Margin="0,0,0,16">
+
                     <ListView.View>
                         <GridView>
+
                             <GridViewColumn Header="Имя"
                                             Width="220"
                                             DisplayMemberBinding="{Binding FullName}"/>
+
                             <GridViewColumn Header="Время"
                                             Width="80"
                                             DisplayMemberBinding="{Binding AddedAt}"/>
+
                             <GridViewColumn Header=""
                                             Width="60">
                                 <GridViewColumn.CellTemplate>
@@ -213,23 +243,29 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+
                         </GridView>
                     </ListView.View>
+
                 </ListView>
 
-                <!-- Стоимость (ввод вручную) -->
-
-                <!-- Рассчитанная стоимость автоматически -->
+                <!-- Стоимость -->
                 <Grid Height="62" Margin="0,0,0,16">
+
                     <Border Style="{StaticResource InputBorderStyle}"/>
+
                     <TextBlock x:Name="HintCalculatedCost"
                                Text="Рассчитано автоматически"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
-                               IsHitTestVisible="False" Margin="366,0,0,0">
+                               IsHitTestVisible="False"
+                               Margin="339,7,10,0"
+                               VerticalAlignment="Top"
+                               Height="45">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="CalculatedCostTransform"/>
                         </TextBlock.RenderTransform>
                     </TextBlock>
+
                     <TextBlock x:Name="tbCalculatedCost"
                                Padding="16,20,16,0"
                                FontSize="15"
@@ -238,6 +274,7 @@
                                VerticalAlignment="Center"
                                Margin="10,0,0,0"
                                Text="—"/>
+
                 </Grid>
 
                 <!-- Оплачено -->
@@ -249,16 +286,21 @@
 
                 <!-- Примечания -->
                 <Grid Height="100" Margin="0,0,0,16">
+
                     <Border Style="{StaticResource InputBorderStyle}"/>
+
                     <TextBlock x:Name="HintNotes"
                                Text="Примечания"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
                                VerticalAlignment="Top"
                                Margin="0,6,0,0">
+
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="NotesTransform"/>
                         </TextBlock.RenderTransform>
+
                     </TextBlock>
+
                     <TextBox x:Name="tbNotes"
                              Padding="16,20,16,8"
                              FontSize="15"
@@ -267,16 +309,17 @@
                              VerticalContentAlignment="Top"
                              TextWrapping="Wrap"
                              AcceptsReturn="True"/>
+
                 </Grid>
 
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Кнопки -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
                     Margin="0,16,0,0">
+
             <Button Content="Сохранить"
                     Style="{StaticResource CustomBlueButtonStyle}"
                     Background="#28a745"
@@ -285,6 +328,7 @@
                     Height="48"
                     Margin="0,0,12,0"
                     Click="btnSave_Click"/>
+
             <Button Content="Отмена"
                     Style="{StaticResource CustomBlueButtonStyle}"
                     Background="#6c757d"
@@ -292,6 +336,8 @@
                     Width="140"
                     Height="48"
                     Click="btnCancel_Click"/>
+
         </StackPanel>
+
     </Grid>
 </Window>

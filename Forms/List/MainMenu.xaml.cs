@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using WpfNastolSystem.Forms.Edit;
+using WpfNastolSystem.Moduls.CurrentUser;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Windows;
 
@@ -13,6 +14,17 @@ namespace WpfNastolSystem.Forms.List
 {
     public partial class MainMenu : Page
     {
+        private readonly string[] _allTables =
+        {
+            "games",
+            "persons",
+            "sessions",
+            "categories",
+            "game_copies",
+            "tables",
+            "accounts",
+            "roles"
+        };
         private readonly DataBaseQuery _db = new();
         private DataTable? _currentData;
         private string _currentTable = "games";
@@ -20,12 +32,11 @@ namespace WpfNastolSystem.Forms.List
         public MainMenu()
         {
             InitializeComponent();
-            InitializePage();
+            ApplyRoleRestrictions();
         }
 
-        private void InitializePage() => LoadTable("games");
 
-        private void ThemButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Тема");
+        private void DocsButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Документы");
 
         #region Загрузка таблицы
         private void MenuButton_Click(object sender, RoutedEventArgs e)
@@ -103,33 +114,89 @@ namespace WpfNastolSystem.Forms.List
                 _ => new() { "Все" }
             };
 
-        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
-        private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyFilter();
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string search = SearchTextBox.Text?.Trim() ?? "";
 
-        private void ApplyFilter()
+            if (string.IsNullOrWhiteSpace(search))
+            {
+                LoadData(); // Загружаем оригинальные данные
+                return;
+            }
+
+            ApplySearchFilter(search);
+        }
+        private void ApplySearchFilter(string search)
         {
             if (_currentData == null) return;
-            var view = _currentData.DefaultView;
-            string search = SearchTextBox.Text?.Trim() ?? "";
-            string selectedFilter = FilterComboBox.SelectedItem?.ToString() ?? "Все";
 
+            // Поиск без учёта регистра
+            string lowerSearch = search.ToLower();
+
+            var filteredRows = _currentData.AsEnumerable()
+                .Where(row =>
+                    _currentData.Columns
+                        .Cast<DataColumn>()
+                        .Where(c => !c.ColumnName.EndsWith("_id")) // исключаем ID
+                        .Any(c =>
+                        {
+                            var value = row[c];
+                            if (value == null || value == DBNull.Value)
+                                return false;
+
+                            // Преобразуем в строку и ищем
+                            return value.ToString()!.ToLower().Contains(lowerSearch);
+                        })
+                );
+
+            if (filteredRows.Any())
+            {
+                DataGrid.ItemsSource = filteredRows.CopyToDataTable().DefaultView;
+            }
+            else
+            {
+                DataGrid.ItemsSource = null;
+            }
+        }
+        private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyFilter();
+
+        private void ApplyFilter(string search = "")
+        {
+            if (_currentData == null) return;
+
+            var view = _currentData.DefaultView;
             var filters = new List<string>();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
-                var escapedSearch = search.Replace("'", "''");
-                var stringColumns = _currentData.Columns
-                    .Cast<DataColumn>()
-                    .Where(c => c.DataType == typeof(string))
-                    .Select(c => $"[{c.ColumnName}] LIKE '%{escapedSearch}%'");
-                filters.Add("(" + string.Join(" OR ", stringColumns) + ")");
+                string escaped = search.Replace("'", "''");
+                var columnFilters = _currentData.Columns
+                .Cast<DataColumn>()
+                .Where(c => !c.ColumnName.EndsWith("_id"))  
+                .Select(c =>
+                {
+                    if (c.DataType == typeof(string))
+                        return $"[{c.ColumnName}] LIKE '%{escaped}%'";
+                    else if (c.DataType == typeof(int) || c.DataType == typeof(decimal) || c.DataType == typeof(double))
+                        return $"Convert([{c.ColumnName}], 'System.String') LIKE '%{escaped}%'";
+                    else if (c.DataType == typeof(DateTime))
+                        return $"Convert([{c.ColumnName}], 'System.String') LIKE '%{escaped}%'";
+                    else
+                        return null;
+                })
+                .Where(f => f != null)
+                .ToList();
+
+                if (columnFilters.Count > 0)
+                    filters.Add("(" + string.Join(" OR ", columnFilters) + ")");
             }
 
-            string? additional = GetAdditionalFilter(selectedFilter);
+            string? additional = GetAdditionalFilter(FilterComboBox.SelectedItem?.ToString() ?? "Все");
             if (!string.IsNullOrEmpty(additional))
                 filters.Add(additional);
 
             view.RowFilter = string.Join(" AND ", filters);
+            DataGrid.ItemsSource = view;
         }
 
         private string? GetAdditionalFilter(string filter) =>
@@ -207,6 +274,84 @@ namespace WpfNastolSystem.Forms.List
         #endregion
 
         #region Вспомогательные методы
+        private void ApplyRoleRestrictions()
+        {
+            string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
+
+            switch (role)
+            {
+                case "admin":
+                    LoadTable("games");
+                    break;
+
+                case "cashier":
+                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables" });
+                    LoadTable("sessions");          
+                    break;
+
+                case "sklad":
+                    HideMenuButtonsExcept(new[] { "game_copies" });
+                    LoadTable("game_copies");       
+                    break;
+
+                case "gamemaster":
+                    HideMenuButtons(new[] { "accounts", "roles" });
+                    LoadTable("sessions");          
+                    break;
+                default:
+                    HideAllMenuButtons();
+                    break;
+            }
+        }
+        private void HideMenuButtonsExcept(string[] allowedTags)
+        {
+            var allowed = new HashSet<string>(allowedTags);
+
+            foreach (Button btn in GetMenuButtons())
+            {
+                if (btn.Tag is string tag && !allowed.Contains(tag))
+                {
+                    btn.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void HideMenuButtons(string[] tagsToHide)
+        {
+            var toHide = new HashSet<string>(tagsToHide);
+
+            foreach (Button btn in GetMenuButtons())
+            {
+                if (btn.Tag is string tag && toHide.Contains(tag))
+                {
+                    btn.Visibility = Visibility.Collapsed;
+                }
+            }
+        }
+
+        private void HideAllMenuButtons()
+        {
+            foreach (Button btn in GetMenuButtons())
+            {
+                btn.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private IEnumerable<Button> GetMenuButtons()
+        {
+            // Предполагаем, что StackPanel с кнопками находится внутри ScrollViewer внутри Border (первый столбец)
+            if (this.FindName("MainGrid") is Grid mainGrid &&   // если Grid не имеет x:Name — переименуй в XAML <Grid x:Name="MainGrid">
+                mainGrid.Children[0] is Border leftBorder &&
+                leftBorder.Child is ScrollViewer scroll &&
+                scroll.Content is StackPanel menuPanel)
+            {
+                foreach (var child in menuPanel.Children)
+                {
+                    if (child is Button btn && btn.Tag != null)
+                        yield return btn;
+                }
+            }
+        }
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Выйти из системы?",
@@ -259,12 +404,12 @@ namespace WpfNastolSystem.Forms.List
             table switch
             {
                 "games" => "Игры",
-                "persons" => "Пользователи",
+                "persons" => "Посетители",
                 "sessions" => "Сессии",
                 "categories" => "Категории",
                 "game_copies" => "Копии игр",
                 "tables" => "Столы",
-                "accounts" => "Аккаунты",
+                "accounts" => "Работники",
                 "roles" => "Роли",
                 _ => table
             };
