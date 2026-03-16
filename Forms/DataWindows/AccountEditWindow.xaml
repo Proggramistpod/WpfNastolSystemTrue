@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Добавление работника"
-        Height="743" Width="520"
+        Height="878" Width="520"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
@@ -118,7 +118,7 @@
                              CaretBrush="{StaticResource PrimaryBlue}" MaxLength="50"/>
                 </Grid>
 
-                <!-- Пароль (только при создании) -->
+                <!-- Пароль (всегда отображается, при редактировании необязателен) -->
                 <Grid x:Name="PasswordPanel" Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintPassword" Text="Пароль *" 
@@ -133,7 +133,7 @@
                                  CaretBrush="{StaticResource PrimaryBlue}"/>
                 </Grid>
 
-                <!-- Подтверждение пароля (только при создании) -->
+                <!-- Подтверждение пароля -->
                 <Grid x:Name="ConfirmPasswordPanel" Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintConfirmPassword" Text="Подтверждение пароля *" 
@@ -160,11 +160,11 @@
                     </Grid.RowDefinitions>
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="Дата создания:" Foreground="#2C3E50" FontSize="13"/>
                     <TextBlock x:Name="CreatedAtText" Grid.Row="0" Grid.Column="1" Foreground="#2C3E50" FontSize="13"/>
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Последний вход:" Foreground="#2C3E50" FontSize="13"/>
-                    <TextBlock x:Name="LastLoginText" Grid.Row="1" Grid.Column="1" Foreground="#2C3E50" FontSize="13"/>
+                    <!-- LastLogin удалён по требованию -->
                 </Grid>
 
-                <TextBlock Text="* - обязательные поля" FontSize="11" Foreground="#888888" Margin="0,12,0,0"/>
+                <TextBlock Text="* - обязательные поля (при создании); при редактировании пароль заполнять только для смены" 
+                           FontSize="11" Foreground="#888888" Margin="0,12,0,0" TextWrapping="Wrap"/>
             </StackPanel>
         </ScrollViewer>
 
@@ -176,5 +176,6 @@
             <Button Content="Отмена" Style="{StaticResource CustomBlueButtonStyle}" Background="#6c757d"
                     BorderBrush="#6c757d" Width="140" Height="48" Click="CancelButton_Click"/>
         </StackPanel>
+
     </Grid>
 </Window>

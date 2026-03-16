@@ -224,13 +224,15 @@
             string query = @"
         SELECT
             a.account_id,
-            a.login,
-            p.full_name AS person_name,
-            a.created_at
+            p.full_name AS full_name,
+            r.name AS role_name,
+            p.phone AS phone,
+            a.login AS login
         FROM accounts a
         INNER JOIN persons p ON a.person_id = p.person_id
-        WHERE p.role_id != 1 
-        ORDER BY p.full_name";
+        INNER JOIN roles r ON p.role_id = r.role_id
+        WHERE p.role_id != 1
+        ORDER BY p.full_name;";
             return dbManager.Select(query);
         }
         #endregion
@@ -286,7 +288,6 @@
             SELECT
                 p.person_id,
                 p.full_name,
-                r.name AS role_name,
                 p.phone,
                 p.email,
                 DATE_FORMAT(p.birth_date, '%d.%m.%Y') as birth_date,
@@ -734,16 +735,28 @@
         (person_id, login, password, created_at)
         VALUES 
         (@person_id, @login, @password, NOW())";
-
             dbManager.NonQuery(query, parameters);
         }
 
         public void UpdateAccount(Dictionary<string, object> parameters)
         {
-            string query = @"UPDATE accounts SET
-        person_id = @person_id,
-        login = @login
-        WHERE account_id = @account_id";
+            // Определяем, нужно ли обновлять пароль (ключ @password присутствует)
+            bool updatePassword = parameters.ContainsKey("@password");
+
+            string query;
+            if (updatePassword)
+            {
+                query = @"UPDATE accounts SET
+                    login = @login,
+                    password = @password
+                  WHERE account_id = @account_id";
+            }
+            else
+            {
+                query = @"UPDATE accounts SET
+                    login = @login
+                  WHERE account_id = @account_id";
+            }
 
             dbManager.NonQuery(query, parameters);
         }

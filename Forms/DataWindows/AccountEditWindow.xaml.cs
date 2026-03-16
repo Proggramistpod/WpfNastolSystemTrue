@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -17,16 +15,15 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _accountId;
-        private int? _personId; // ID связанной записи persons
+        private int? _personId;
         private bool _isDataChanged = false;
-
-        // Роль обычного пользователя, которую исключаем из выбора
         private const int EXCLUDED_ROLE_ID = 1;
 
         public class RoleItem
         {
             public int Id { get; set; }
             public string Name { get; set; } = string.Empty;
+            public override string ToString() => Name;
         }
 
         public AccountEditWindow(int? id = null)
@@ -53,10 +50,15 @@ namespace WpfNastolSystem.Forms.Edit
 
             if (editMode)
             {
-                // Скрываем поля пароля
-                PasswordPanel.Visibility = Visibility.Collapsed;
-                ConfirmPasswordPanel.Visibility = Visibility.Collapsed;
+                // При редактировании поля пароля не обязательны
+                HintPassword.Text = "Пароль (оставьте пустым, чтобы не менять)";
+                HintConfirmPassword.Text = "Подтверждение пароля";
                 InfoGrid.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                HintPassword.Text = "Пароль *";
+                HintConfirmPassword.Text = "Подтверждение пароля *";
             }
         }
 
@@ -73,12 +75,9 @@ namespace WpfNastolSystem.Forms.Edit
             BirthDatePicker.LostFocus += (s, e) => UpdateDatePickerHint();
             BirthDatePicker.SelectedDateChanged += (s, e) => UpdateDatePickerHint();
 
-            // PasswordBoxes (только при создании)
-            if (!_accountId.HasValue)
-            {
-                AttachPasswordBox(PasswordBox, HintPassword, PasswordTransform);
-                AttachPasswordBox(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
-            }
+            // PasswordBox (всегда активны)
+            AttachPasswordBox(PasswordBox, HintPassword, PasswordTransform);
+            AttachPasswordBox(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
 
             // ComboBox
             RoleComboBox.SelectionChanged += (s, e) => UpdateComboBoxHint();
@@ -95,11 +94,8 @@ namespace WpfNastolSystem.Forms.Edit
             IsBannedCheckBox.Checked += OnFieldChanged;
             IsBannedCheckBox.Unchecked += OnFieldChanged;
             RoleComboBox.SelectionChanged += OnFieldChanged;
-            if (!_accountId.HasValue)
-            {
-                PasswordBox.PasswordChanged += OnFieldChanged;
-                ConfirmPasswordBox.PasswordChanged += OnFieldChanged;
-            }
+            PasswordBox.PasswordChanged += OnFieldChanged;
+            ConfirmPasswordBox.PasswordChanged += OnFieldChanged;
         }
 
         private void AttachPasswordBox(PasswordBox pb, TextBlock hint, TranslateTransform transform)
@@ -113,14 +109,14 @@ namespace WpfNastolSystem.Forms.Edit
         {
             transform.Y = -24;
             hint.FontSize = 12;
-            hint.Foreground = (System.Windows.Media.Brush)FindResource("PrimaryBlue");
+            hint.Foreground = (Brush)FindResource("PrimaryBlue");
         }
 
         private void MoveHintDown(TextBlock hint, TranslateTransform transform)
         {
             transform.Y = 0;
             hint.FontSize = 14;
-            hint.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(136, 136, 136));
+            hint.Foreground = new SolidColorBrush(Color.FromRgb(136, 136, 136));
         }
 
         private void UpdatePasswordHint(PasswordBox pb, TextBlock hint, TranslateTransform transform)
@@ -139,10 +135,7 @@ namespace WpfNastolSystem.Forms.Edit
                 MoveHintDown(HintBirthDate, BirthDateTransform);
         }
 
-        private void UpdateComboBoxHint()
-        {
-            // Для ComboBox подсказка не используется, но можно оставить как есть
-        }
+        private void UpdateComboBoxHint() { } // не используется
 
         private void UpdateAllHints()
         {
@@ -157,11 +150,8 @@ namespace WpfNastolSystem.Forms.Edit
             if (!string.IsNullOrEmpty(LoginTextBox.Text))
                 MoveHintUp(HintLogin, LoginTransform);
             UpdateDatePickerHint();
-            if (!_accountId.HasValue)
-            {
-                UpdatePasswordHint(PasswordBox, HintPassword, PasswordTransform);
-                UpdatePasswordHint(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
-            }
+            UpdatePasswordHint(PasswordBox, HintPassword, PasswordTransform);
+            UpdatePasswordHint(ConfirmPasswordBox, HintConfirmPassword, ConfirmPasswordTransform);
         }
 
         private void OnFieldChanged(object sender, EventArgs e)
@@ -180,7 +170,7 @@ namespace WpfNastolSystem.Forms.Edit
                 foreach (DataRow row in table.Rows)
                 {
                     int id = Convert.ToInt32(row["role_id"]);
-                    if (id == EXCLUDED_ROLE_ID) continue; // исключаем обычных пользователей
+                    if (id == EXCLUDED_ROLE_ID) continue;
 
                     roles.Add(new RoleItem
                     {
@@ -202,7 +192,6 @@ namespace WpfNastolSystem.Forms.Edit
         {
             try
             {
-                // Получаем данные аккаунта
                 var accountTable = _db.GetAccountById(_accountId!.Value);
                 if (accountTable.Rows.Count == 0)
                 {
@@ -218,7 +207,6 @@ namespace WpfNastolSystem.Forms.Edit
                     ? Convert.ToDateTime(accRow["created_at"]).ToString("dd.MM.yyyy HH:mm")
                     : "Не указано";
 
-                // Получаем данные персоны
                 var personTable = _db.GetPersonById(_personId.Value);
                 if (personTable.Rows.Count == 0)
                 {
@@ -283,9 +271,8 @@ namespace WpfNastolSystem.Forms.Edit
             if (LoginTextBox.Text.Length > 50)
                 return ShowWarning("Логин не может быть длиннее 50 символов", LoginTextBox);
 
-
-            // Для нового аккаунта проверяем пароль
-            if (!_accountId.HasValue)
+            // Пароль (в зависимости от режима)
+            if (!_accountId.HasValue) // создание
             {
                 if (PasswordBox.SecurePassword.Length == 0)
                     return ShowWarning("Введите пароль", PasswordBox);
@@ -293,6 +280,18 @@ namespace WpfNastolSystem.Forms.Edit
                     return ShowWarning("Пароль должен быть не менее 6 символов", PasswordBox);
                 if (PasswordBox.Password != ConfirmPasswordBox.Password)
                     return ShowWarning("Пароли не совпадают", ConfirmPasswordBox);
+            }
+            else // редактирование
+            {
+                // Если пароль введён, проверяем его
+                if (PasswordBox.SecurePassword.Length > 0)
+                {
+                    if (PasswordBox.SecurePassword.Length < 6)
+                        return ShowWarning("Пароль должен быть не менее 6 символов", PasswordBox);
+                    if (PasswordBox.Password != ConfirmPasswordBox.Password)
+                        return ShowWarning("Пароли не совпадают", ConfirmPasswordBox);
+                }
+                // Если пароль не введён, ничего не проверяем
             }
 
             return true;
@@ -329,7 +328,7 @@ namespace WpfNastolSystem.Forms.Edit
                 {
                     // Обновление существующего работника
                     UpdatePerson();
-                    UpdateAccount();
+                    UpdateAccount(); // теперь обновляет и пароль, если он был введён
                     ShowInfo("Данные обновлены");
                 }
                 else
@@ -386,7 +385,7 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 ["@person_id"] = personId,
                 ["@login"] = LoginTextBox.Text.Trim(),
-                ["@password"] = HashPassword(PasswordBox.Password)
+                ["@password"] = PasswordBox.Password // пароль сохраняется как есть (plain text)
             };
             _db.InsertAccount(parameters);
         }
@@ -397,19 +396,15 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 ["@account_id"] = _accountId!.Value,
                 ["@login"] = LoginTextBox.Text.Trim()
-                // пароль не меняем
             };
-            _db.UpdateAccount(parameters);
-        }
 
-        private string HashPassword(string password)
-        {
-            using (var sha256 = SHA256.Create())
+            // Если пароль был изменён (не пустой), добавляем его в параметры
+            if (PasswordBox.SecurePassword.Length > 0)
             {
-                var bytes = Encoding.UTF8.GetBytes(password);
-                var hash = sha256.ComputeHash(bytes);
-                return Convert.ToBase64String(hash);
+                parameters["@password"] = PasswordBox.Password; // plain text
             }
+
+            _db.UpdateAccount(parameters);
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)

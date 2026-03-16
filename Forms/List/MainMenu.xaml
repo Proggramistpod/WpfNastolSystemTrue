@@ -30,7 +30,7 @@
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="games"
                             Click="MenuButton_Click"/>
-                    <Button Content="👥 Люди" 
+                    <Button Content="👥 Поестители" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="persons"
                             Click="MenuButton_Click"/>
@@ -50,10 +50,10 @@
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="tables"
                             Click="MenuButton_Click" Cursor="Hand"/>
-                    <Button Content="👤 Аккаунты" 
+                    <Button Content="👤 Работники" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="accounts"
-                            Click="MenuButton_Click"/>
+                            Click="MenuButton_Click" Cursor="Hand"/>
                     <Button Content="🔑 Роли" 
                             Style="{StaticResource ModernMenuButtonStyle}"
                             Tag="roles"
