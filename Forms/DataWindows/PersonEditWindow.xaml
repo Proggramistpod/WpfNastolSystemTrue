@@ -31,7 +31,7 @@
                     <TextBox x:Name="FullNameTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="150"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="150" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Телефон -->
@@ -46,7 +46,7 @@
                     <TextBox x:Name="PhoneTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20" Height="52" VerticalAlignment="Top"/>
                 </Grid>
 
                 <!-- Email -->
@@ -61,7 +61,7 @@
                     <TextBox x:Name="EmailTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="120"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="120" Margin="0,0,0,9"/>
                 </Grid>
 
                 <!-- Дата рождения -->
@@ -85,8 +85,8 @@
                 <!-- Примечания -->
                 <Grid Height="100" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
-                    <TextBlock x:Name="HintNotes" Text="Примечания" 
-                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False">
+                    <TextBlock x:Name="HintNotes" Text="Примечание" 
+                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False" Height="48" Margin="0,2,0,0" VerticalAlignment="Top">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="NotesTransform"/>
                         </TextBlock.RenderTransform>

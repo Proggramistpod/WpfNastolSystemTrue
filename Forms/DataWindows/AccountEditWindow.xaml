@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Добавление работника"
-        Height="878" Width="520"
+        Height="972" Width="520"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
@@ -37,7 +37,7 @@
                     <TextBox x:Name="FullNameTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="150"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="150" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Телефон -->
@@ -52,7 +52,7 @@
                     <TextBox x:Name="PhoneTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Email -->
@@ -67,7 +67,7 @@
                     <TextBox x:Name="EmailTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="120"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="120" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Дата рождения -->
@@ -81,7 +81,7 @@
                     </TextBlock>
                     <DatePicker x:Name="BirthDatePicker"
                                 Padding="16,12,16,0" FontSize="15" Background="Transparent"
-                                BorderThickness="0" VerticalContentAlignment="Bottom"/>
+                                BorderThickness="0" VerticalContentAlignment="Bottom" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Статус блокировки -->
@@ -92,7 +92,7 @@
                 <Grid Height="100" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintNotes" Text="Примечания" 
-                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False">
+                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False" Height="46" VerticalAlignment="Top">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="NotesTransform"/>
                         </TextBlock.RenderTransform>
@@ -115,7 +115,7 @@
                     <TextBox x:Name="LoginTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="50"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="50" Height="52" VerticalAlignment="Top"/>
                 </Grid>
 
                 <!-- Пароль (всегда отображается, при редактировании необязателен) -->
@@ -130,7 +130,7 @@
                     <PasswordBox x:Name="PasswordBox"
                                  Padding="16,12,16,0" FontSize="15" Background="Transparent"
                                  BorderThickness="0" VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Подтверждение пароля -->
@@ -145,7 +145,7 @@
                     <PasswordBox x:Name="ConfirmPasswordBox"
                                  Padding="16,12,16,0" FontSize="15" Background="Transparent"
                                  BorderThickness="0" VerticalContentAlignment="Bottom"
-                                 CaretBrush="{StaticResource PrimaryBlue}"/>
+                                 CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,10"/>
                 </Grid>
 
                 <!-- Информация о создании (только для редактирования) -->
