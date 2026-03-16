@@ -108,9 +108,14 @@ namespace WpfNastolSystem.Forms.List
         private List<string> GetFilterOptions(string table) =>
             table switch
             {
-                "games" => new() { "Все", "По году", "По рейтингу", "По количеству игроков" },
+                "games" => new() { "Все", "По году", "По рейтингу", "По количеству игроков", "Активные", "Неактивные" },
                 "persons" => new() { "Все", "Активные", "Забаненные" },
                 "sessions" => new() { "Все", "Активные", "Завершенные" },
+                "categories" => new() { "Все" },
+                "game_copies" => new() { "Все", "Доступные", "Недоступные" },
+                "tables" => new() { "Все", "Занятые", "Свободные" },
+                "accounts" => new() { "Все", "Активные", "Заблокированные" },
+                "roles" => new() { "Все" },
                 _ => new() { "Все" }
             };
 
