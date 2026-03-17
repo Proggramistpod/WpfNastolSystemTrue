@@ -79,7 +79,6 @@ using WpfNastolSystem.Moduls.CurrentUser;
                         play_time_min,
                         age_rating,
                         bgg_rating,
-                        is_active,
                         description
                     FROM games
                     ORDER BY title";

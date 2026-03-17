@@ -34,10 +34,104 @@ namespace WpfNastolSystem.Forms.List
             InitializeComponent();
             ApplyRoleRestrictions();
         }
+        // Удаляем дублирующийся метод btnDocuments_Loaded
+        // Оставляем только одну чистую реализацию
 
+        private void btnDocuments_Loaded(object sender, RoutedEventArgs e)
+        {
+            string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
 
-        private void DocsButton_Click(object sender, RoutedEventArgs e) => MessageBox.Show("Документы");
+            var ctxMenu = new ContextMenu();
 
+            // Приходная накладная — для склада и админа
+            if (role is "sklad" or "admin")
+            {
+                var miIncoming = new MenuItem
+                {
+                    Header = "📦 Приходная накладная (новые копии игр)",
+                    FontSize = 14
+                };
+                miIncoming.Click += (_, _) => new IncomingGameCopiesWindow().ShowDialog();
+                ctxMenu.Items.Add(miIncoming);
+            }
+
+            // Чек по сессии — для кассира и админа
+            if (role is "cashier" or "admin")
+            {
+                var miCheck = new MenuItem
+                {
+                    Header = "💳 Чек по завершённой сессии",
+                    FontSize = 14
+                };
+                miCheck.Click += (_, _) => OpenSessionSelectorForCheck();
+                ctxMenu.Items.Add(miCheck);
+            }
+
+            // Если пунктов меню нет → отключаем кнопку
+            if (ctxMenu.Items.Count == 0)
+            {
+                btnDocuments.IsEnabled = false;
+                btnDocuments.ToolTip = "У вашей роли нет доступа к созданию документов";
+            }
+            else
+            {
+                btnDocuments.ContextMenu = ctxMenu;
+            }
+        }
+
+        // Обработка правой кнопки мыши (открытие контекстного меню)
+        private void btnDocuments_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (btnDocuments.ContextMenu is { } menu)
+            {
+                menu.PlacementTarget = btnDocuments;
+                menu.IsOpen = true;
+                e.Handled = true;
+            }
+        }
+
+        // Обычный левый клик по кнопке
+        private void btnDocuments_Click(object sender, RoutedEventArgs e)
+        {
+            string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
+
+            switch (role)
+            {
+                case "sklad":
+                    new IncomingGameCopiesWindow().ShowDialog();
+                    break;
+
+                case "cashier":
+                    OpenSessionSelectorForCheck();
+                    break;
+
+                case "admin":
+                    MessageBox.Show(
+                        "Выберите нужный документ в контекстном меню (правая кнопка мыши)",
+                        "Администратор",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information
+                    );
+                    break;
+
+                default:
+                    MessageBox.Show(
+                        "Нет доступа к созданию документов для вашей роли.",
+                        "Ограничение",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning
+                    );
+                    break;
+            }
+        }
+
+        // Метод открытия окна выбора сессии и последующего чека
+        private void OpenSessionSelectorForCheck()
+        {
+            var selector = new SessionSelectorWindow();
+            selector.ShowDialog();  // ← просто показываем, дальше всё делает само окно
+                                    // Никакого SelectedSessionId и второго окна больше не нужно
+        }
         #region Загрузка таблицы
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {

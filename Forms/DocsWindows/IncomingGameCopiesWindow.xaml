@@ -1,0 +1,45 @@
+﻿<Window x:Class="WpfNastolSystem.Windows.IncomingGameCopiesWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Приходная накладная (поступление копий игр)" Height="620" Width="920"
+        WindowStartupLocation="CenterOwner" Background="#F8FAFC">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок и дата -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+            <TextBlock Text="Приходная накладная" FontSize="20" FontWeight="SemiBold"/>
+            <TextBlock x:Name="tbDate" Margin="20,0,0,0" VerticalAlignment="Center" FontSize="14"/>
+        </StackPanel>
+
+        <!-- Таблица позиций -->
+        <DataGrid x:Name="dgItems" Grid.Row="1" AutoGenerateColumns="False" CanUserAddRows="True"
+                  RowEditEnding="dgItems_RowEditEnding" BeginningEdit="dgItems_BeginningEdit">
+            <DataGrid.Columns>
+                <DataGridComboBoxColumn Header="Игра" Width="*" 
+                                        SelectedValueBinding="{Binding game_id}"
+                                        DisplayMemberPath="title"
+                                        SelectedValuePath="game_id"/>
+                <DataGridTextColumn Header="Кол-во копий" Binding="{Binding quantity}" Width="110"/>
+                <DataGridTextColumn Header="Инв. номер (от)" Binding="{Binding start_inventory}" Width="140"/>
+                <DataGridComboBoxColumn Header="Состояние" Width="130"
+                                        SelectedValueBinding="{Binding conditions}"/>
+                <DataGridTextColumn Header="Место хранения" Binding="{Binding location}" Width="160"/>
+                <DataGridTextColumn Header="Примечание" Binding="{Binding notes}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Кнопки -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0" >
+            <Button Content="Добавить строку" Width="140" Margin="0,0,12,0" Click="BtnAddRow_Click" Style="{StaticResource CustomBlueButtonStyle}" Height="49"/>
+            <Button Content="Сохранить и создать накладную" Width="277" Click="BtnSaveAndPrint_Click"
+                    Style="{StaticResource CustomBlueButtonStyle}"/>
+            <Button Content="Отмена" Width="100" Margin="12,0,0,0" Style="{StaticResource CustomBlueButtonStyle}" Click="BtnCancel_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

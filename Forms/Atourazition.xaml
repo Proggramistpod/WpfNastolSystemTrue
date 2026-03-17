@@ -56,12 +56,6 @@
                         Height="52"
                         Style="{StaticResource CustomBlueButtonStyle}"
                         Click="Button_Click"/>
-                <Button Content="Забыли пароль?"
-                           FontSize="13"
-                           Foreground="{StaticResource PrimaryBlue}"
-                           HorizontalAlignment="Right"
-                           Margin="0,16,0,0"
-                           Style="{StaticResource SecondaryButtonStyle}" Height="18"/>
             </StackPanel>
         </Border>
     </Grid>

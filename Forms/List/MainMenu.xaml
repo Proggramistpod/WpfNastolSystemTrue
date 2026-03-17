@@ -62,9 +62,12 @@
                     <Separator Margin="16,10" Background="{StaticResource BorderBlue}"/>
 
                     <!-- Кнопка настроек -->
-                    <Button Content="ДОКУМЕНТЫ" 
-                                Style="{StaticResource ModernMenuButtonStyle}"
-                                Click="DocsButton_Click"/>
+                    <Button x:Name="btnDocuments"
+                    Content="📄 ДОКУМЕНТЫ"
+                    Style="{StaticResource ModernMenuButtonStyle}"
+                    Loaded="btnDocuments_Loaded"
+                    MouseRightButtonDown="btnDocuments_MouseRightButtonDown"
+                    Click="btnDocuments_Click" />
 
                     <!-- Выход -->
                     <Button Content="🚪 Выход" 
