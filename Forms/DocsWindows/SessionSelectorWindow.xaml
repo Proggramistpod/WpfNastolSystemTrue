@@ -19,7 +19,8 @@
                   MouseDoubleClick="dgSessions_MouseDoubleClick">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="№" Binding="{Binding session_id}" Width="70"/>
-                <DataGridTextColumn Header="Игра" Binding="{Binding game_title}" Width="*"/>
+                <!-- Исправлено: теперь привязка к game_titles -->
+                <DataGridTextColumn Header="Игра" Binding="{Binding game_titles}" Width="*"/>
                 <DataGridTextColumn Header="Стол" Binding="{Binding table_number}" Width="90"/>
                 <DataGridTextColumn Header="Начало" Binding="{Binding started_at, StringFormat=dd.MM.yyyy HH:mm}" Width="150"/>
                 <DataGridTextColumn Header="Окончание" Binding="{Binding ended_at, StringFormat=dd.MM.yyyy HH:mm}" Width="150"/>

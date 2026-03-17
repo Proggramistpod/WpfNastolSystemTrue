@@ -5,7 +5,6 @@ using System.Data;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Xml.Linq;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
 
@@ -17,12 +16,22 @@ namespace WpfNastolSystem.Forms.Edit
         public string DisplayText { get; set; }
         public override string ToString() => DisplayText;
     }
+
     public class PersonItem
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public override string ToString() => Name; // добавить эту строку
+        public override string ToString() => Name;
     }
+
+    public class ParticipantViewModel
+    {
+        public int RecordId { get; set; }
+        public int PersonId { get; set; }
+        public string FullName { get; set; }
+        public string AddedAt { get; set; }
+    }
+
     public partial class SessionEditWindow : Window
     {
         private readonly DataBaseQuery _db = new();
@@ -30,6 +39,11 @@ namespace WpfNastolSystem.Forms.Edit
         private readonly int _currentUserPersonId;
 
         private ObservableCollection<ParticipantViewModel> _participants = new();
+
+        // Данные выбранной игры
+        private int? _selectedCopyId = null;
+        private string _selectedGameTitle = null;
+        private string _selectedInventoryNumber = null;
 
         private const decimal HOURLY_RATE = 300m;
         private const double ROUND_INTERVAL_MIN = 30;
@@ -47,6 +61,7 @@ namespace WpfNastolSystem.Forms.Edit
 
             LoadOrganizersAndParticipantsList();
             LoadTables();
+            LoadAvailableGames();
             AttachFloatingHints();
             AttachCostCalculationEvents();
 
@@ -93,7 +108,6 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void LoadOrganizersAndParticipantsList()
         {
-            // Для участников — только активные посетители (роль 1, не забанены)
             var dtVisitors = _db.GetActiveVisitors();
             var visitors = dtVisitors.AsEnumerable().Select(row => new PersonItem
             {
@@ -105,7 +119,6 @@ namespace WpfNastolSystem.Forms.Edit
             cmbAddParticipant.DisplayMemberPath = "Name";
             cmbAddParticipant.SelectedValuePath = "Id";
 
-            // Для организаторов — все гейммастеры (включая неактивных)
             var dtMasters = _db.GetGameMasters(includeInactive: true);
             var masters = dtMasters.AsEnumerable().Select(row => new PersonItem
             {
@@ -113,18 +126,14 @@ namespace WpfNastolSystem.Forms.Edit
                 Name = row.Field<string>("full_name")
             }).ToList();
 
-            // Если сессия редактируется, добавим текущего организатора, если его нет среди мастеров
             if (_sessionId.HasValue)
             {
                 var sessionData = _db.GetSessionById(_sessionId.Value);
                 if (sessionData != null && sessionData.Rows.Count > 0)
                 {
                     int orgId = Convert.ToInt32(sessionData.Rows[0]["organizer_id"]);
-                    string orgName = sessionData.Rows[0]["organizer_name"]?.ToString() ?? "";
-
                     if (!masters.Any(m => m.Id == orgId) && orgId > 0)
                     {
-                        // Пробуем получить данные организатора из базы
                         var personDt = _db.GetPersonById(orgId);
                         if (personDt.Rows.Count > 0)
                         {
@@ -158,6 +167,22 @@ namespace WpfNastolSystem.Forms.Edit
             cmbTable.ItemsSource = tables;
             cmbTable.DisplayMemberPath = "DisplayText";
             cmbTable.SelectedValuePath = "Id";
+        }
+
+        private void LoadAvailableGames()
+        {
+            var dt = _db.GetAvailableGameCopies();
+            var games = dt.AsEnumerable().Select(row => new
+            {
+                CopyId = row.Field<int>("copy_id"),
+                DisplayName = row.Field<string>("display_name"),
+                GameTitle = row.Field<string>("game_title"),
+                InventoryNumber = row.Field<string>("inventory_number")
+            }).ToList();
+
+            cmbGame.ItemsSource = games;
+            cmbGame.DisplayMemberPath = "DisplayName";
+            cmbGame.SelectedValuePath = "CopyId";
         }
 
         private void LoadSessionData()
@@ -199,6 +224,7 @@ namespace WpfNastolSystem.Forms.Edit
             tbNotes.Text = r["notes"]?.ToString() ?? "";
 
             LoadParticipants();
+            LoadSessionGame(); // загружаем игру, привязанную к сессии
         }
 
         private void LoadParticipants()
@@ -218,12 +244,43 @@ namespace WpfNastolSystem.Forms.Edit
             }
         }
 
+        private void LoadSessionGame()
+        {
+            var dt = _db.GetSessionGames(_sessionId.Value);
+            if (dt.Rows.Count > 0)
+            {
+                var row = dt.Rows[0]; // берём первую игру (по логике она одна)
+                _selectedCopyId = Convert.ToInt32(row["copy_id"]);
+                _selectedGameTitle = row["game_title"].ToString();
+                _selectedInventoryNumber = row["inventory_number"].ToString();
+
+                tbSelectedGame.Text = _selectedGameTitle;
+                tbGameInventory.Text = $"Инв. №: {_selectedInventoryNumber}";
+                borderSelectedGame.Background = System.Windows.Media.Brushes.LightGreen;
+            }
+            else
+            {
+                ClearSelectedGame();
+            }
+        }
+
+        private void ClearSelectedGame()
+        {
+            _selectedCopyId = null;
+            _selectedGameTitle = null;
+            _selectedInventoryNumber = null;
+            tbSelectedGame.Text = "Игра не выбрана";
+            tbGameInventory.Text = "";
+            borderSelectedGame.Background = System.Windows.Media.Brushes.WhiteSmoke;
+        }
+
         #endregion
 
         #region Расчёт стоимости
 
         private void UpdateCalculatedCost()
         {
+            // без изменений (как в предыдущей версии)
             if (!dpStartDate.SelectedDate.HasValue ||
                 !int.TryParse(tbStartHour.Text, out int sh) ||
                 !int.TryParse(tbStartMinute.Text, out int sm) ||
@@ -319,6 +376,30 @@ namespace WpfNastolSystem.Forms.Edit
                 _participants.Remove(vm);
         }
 
+        private void btnSetGame_Click(object sender, RoutedEventArgs e)
+        {
+            if (cmbGame.SelectedItem == null)
+            {
+                MessageBox.Show("Выберите игру из списка!", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            dynamic selected = cmbGame.SelectedItem; // анонимный тип
+            _selectedCopyId = selected.CopyId;
+            _selectedGameTitle = selected.GameTitle;
+            _selectedInventoryNumber = selected.InventoryNumber;
+
+            tbSelectedGame.Text = _selectedGameTitle;
+            tbGameInventory.Text = $"Инв. №: {_selectedInventoryNumber}";
+            borderSelectedGame.Background = System.Windows.Media.Brushes.LightGreen;
+        }
+
+        private void btnClearGame_Click(object sender, RoutedEventArgs e)
+        {
+            ClearSelectedGame();
+        }
+
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidateAndCollectData(out var parameters, out var participantIds))
@@ -326,26 +407,29 @@ namespace WpfNastolSystem.Forms.Edit
 
             try
             {
-                int targetSessionId; // локальная переменная для ID сессии, с которой будем работать
+                int targetSessionId;
 
                 if (_sessionId.HasValue)
                 {
-                    // Редактирование существующей сессии
                     parameters["@session_id"] = _sessionId.Value;
                     _db.UpdateSession(parameters);
                     _db.ClearSessionParticipants(_sessionId.Value);
-                    targetSessionId = _sessionId.Value; // используем существующий ID
+                    _db.ClearSessionGames(_sessionId.Value);
+                    targetSessionId = _sessionId.Value;
                 }
                 else
                 {
-                    // Создание новой сессии
                     int newId = _db.InsertSessionAndGetId(parameters);
-                    targetSessionId = newId; // сохраняем новый ID в локальную переменную
+                    targetSessionId = newId;
                 }
 
-                // Добавляем участников (используем targetSessionId)
+                // Добавляем участников
                 foreach (int pid in participantIds)
                     _db.AddParticipantToSession(targetSessionId, pid);
+
+                // Добавляем игру (если выбрана)
+                if (_selectedCopyId.HasValue)
+                    _db.AddGameToSession(targetSessionId, _selectedCopyId.Value);
 
                 DialogResult = true;
                 Close();
@@ -449,13 +533,5 @@ namespace WpfNastolSystem.Forms.Edit
         }
 
         #endregion
-    }
-
-    public class ParticipantViewModel
-    {
-        public int RecordId { get; set; }
-        public int PersonId { get; set; }
-        public string FullName { get; set; }
-        public string AddedAt { get; set; }
     }
 }

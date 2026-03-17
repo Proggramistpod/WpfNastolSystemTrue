@@ -1,4 +1,5 @@
 ﻿using PdfSharp.Drawing;
+using PdfSharp.Fonts;
 using PdfSharp.Pdf;
 using System;
 using System.Data;
@@ -8,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using WpfNastolSystem.Moduls.DB;
+using WpfNastolSystem.Style;
 
 namespace WpfNastolSystem.Windows
 {
@@ -17,31 +19,35 @@ namespace WpfNastolSystem.Windows
 
         public SessionSelectorWindow()
         {
+            GlobalFontSettings.FontResolver = new WindowsFontResolver(); // ЭТА СТРОКА
             InitializeComponent();
-            LoadUnpaidCompletedSessions();
+            LoadCompletedUnpaidSessions();
         }
 
-        private void LoadUnpaidCompletedSessions()
+        private void LoadCompletedUnpaidSessions()
         {
             try
             {
                 string query = @"
-                    SELECT 
-                        s.session_id,
-                        s.started_at,
-                        s.ended_at,
-                        s.cost,
-                        g.title AS game_title,
-                        t.table_number,
-                        p.full_name AS organizer_name
-                    FROM sessions s
-                    INNER JOIN games g ON s.game_id = g.game_id
-                    INNER JOIN tables t ON s.table_id = t.table_id
-                    LEFT JOIN persons p ON s.organizer_id = p.person_id
-                    WHERE s.ended_at IS NOT NULL 
-                      AND (s.paid = 0 OR s.paid IS NULL)
-                    ORDER BY s.ended_at DESC
-                    LIMIT 300";
+            SELECT 
+                s.session_id,
+                s.started_at,
+                s.ended_at,
+                s.cost,
+                t.table_number,
+                p.full_name AS organizer_name,
+                COALESCE(GROUP_CONCAT(DISTINCT g.title SEPARATOR ', '), '—') AS game_titles
+            FROM sessions s
+            INNER JOIN tables t ON s.table_id = t.table_id
+            LEFT JOIN persons p ON s.organizer_id = p.person_id
+            LEFT JOIN session_games sg ON sg.session_id = s.session_id
+            LEFT JOIN game_copies gc ON gc.copy_id = sg.copy_id
+            LEFT JOIN games g ON g.game_id = gc.game_id
+            WHERE s.ended_at IS NOT NULL 
+              AND (s.paid = 0 OR s.paid IS NULL)
+            GROUP BY s.session_id
+            ORDER BY s.ended_at DESC
+            LIMIT 300";
 
                 DataTable dt = _db.Select(query);
                 dgSessions.ItemsSource = dt.DefaultView;
@@ -130,8 +136,8 @@ namespace WpfNastolSystem.Windows
         {
             try
             {
-                // Данные из строки
-                string gameTitle = row["game_title"]?.ToString() ?? "—";
+                // Данные из строки – game_titles теперь гарантированно не NULL
+                string gameTitles = row["game_titles"].ToString(); // всегда строка благодаря COALESCE
                 string tableNumber = row["table_number"]?.ToString() ?? "—";
                 string organizer = row["organizer_name"]?.ToString() ?? "—";
                 DateTime start = Convert.ToDateTime(row["started_at"]);
@@ -139,37 +145,30 @@ namespace WpfNastolSystem.Windows
                 decimal cost = row["cost"] != DBNull.Value ? Convert.ToDecimal(row["cost"]) : 0m;
 
                 double hours = (end - start).TotalHours;
+                string pdfPath = CreateSimpleCheckPdf(sessionId, gameTitles, tableNumber, organizer, start, end, hours, cost, paymentMethod);
 
-                // PDF генерация
-                string pdfPath = CreateSimpleCheckPdf(sessionId, gameTitle, tableNumber, organizer, start, end, hours, cost, paymentMethod);
-
-                // Обновление сессии
+                // Обновление сессии (без изменений)
                 var pars = new Dictionary<string, object>
-                {
-                    { "@session_id",      sessionId },
-                    { "@paid",            1 },
-                    { "@payment_method",  paymentMethod },
-                    { "@notes_add",       $"Чек PDF создан {DateTime.Now:dd.MM.yyyy HH:mm} | {Path.GetFileName(pdfPath)}" }
-                };
+        {
+            { "@session_id",      sessionId },
+            { "@paid",            1 },
+            { "@payment_method",  paymentMethod },
+            { "@notes_add",       $"Чек PDF создан {DateTime.Now:dd.MM.yyyy HH:mm} | {Path.GetFileName(pdfPath)}" }
+        };
 
                 string updateSql = @"
-                    UPDATE sessions SET
-                        paid = @paid,
-                        payment_method = @payment_method,
-                        notes = CONCAT(IFNULL(notes, ''), '\n', @notes_add)
-                    WHERE session_id = @session_id";
+            UPDATE sessions SET
+                paid = @paid,
+                payment_method = @payment_method,
+                notes = CONCAT(IFNULL(notes, ''), '\n', @notes_add)
+            WHERE session_id = @session_id";
 
                 _db.NonQuery(updateSql, pars);
 
                 MessageBox.Show($"Чек успешно создан и сохранён:\n{pdfPath}\n\nСессия отмечена как оплаченная.",
                     "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Открыть PDF (опционально)
-                try
-                {
-                    Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true });
-                }
-                catch { }
+                try { Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true }); } catch { }
 
                 DialogResult = true;
                 Close();
@@ -180,8 +179,8 @@ namespace WpfNastolSystem.Windows
             }
         }
 
-        private string CreateSimpleCheckPdf(int sessionId, string game, string table, string organizer,
-                                           DateTime start, DateTime end, double hours, decimal amount, string payment)
+        private string CreateSimpleCheckPdf(int sessionId, string gameTitles, string table, string organizer,
+                                          DateTime start, DateTime end, double hours, decimal amount, string payment)
         {
             var document = new PdfDocument();
             document.Info.Title = $"Чек сессия №{sessionId}";
@@ -192,6 +191,8 @@ namespace WpfNastolSystem.Windows
             page.Orientation = PdfSharp.PageOrientation.Portrait;
 
             var gfx = XGraphics.FromPdfPage(page);
+
+            // Используем шрифты, которые точно есть в Windows
             var fontHeader = new XFont("Arial", 14);
             var fontBold = new XFont("Arial", 12);
             var fontNormal = new XFont("Arial", 11);
@@ -207,7 +208,7 @@ namespace WpfNastolSystem.Windows
 
             gfx.DrawString($"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 20;
 
-            gfx.DrawString($"Игра: {game}", fontNormal, XBrushes.Black, 40, y); y += 18;
+            gfx.DrawString($"Игра: {gameTitles}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Стол №: {table}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Организатор: {organizer}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Время: {start:dd.MM.yyyy HH:mm} – {end:HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 18;
@@ -226,13 +227,11 @@ namespace WpfNastolSystem.Windows
             y = (int)page.Height - 70;
             gfx.DrawString("Спасибо за посещение! Ждём Вас снова!", fontSmall, XBrushes.Gray, new XRect(0, y, page.Width, 0), XStringFormats.TopCenter);
 
-            // Сохранение на рабочий стол (или в другую папку)
             string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             string filename = $"Чек_сессия_{sessionId}_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
             string fullPath = Path.Combine(desktop, filename);
 
             document.Save(fullPath);
-
             return fullPath;
         }
 

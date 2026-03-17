@@ -900,6 +900,63 @@ using WpfNastolSystem.Moduls.CurrentUser;
         WHERE person_id = @id";
             return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
         }
+        public DataTable GetAvailableGameCopies()
+        {
+            string query = @"
+        SELECT 
+            gc.copy_id,
+            CONCAT(g.title, ' (инв. ', gc.inventory_number, ')') AS display_name,
+            g.title AS game_title,
+            gc.inventory_number,
+            gc.location,
+            gc.conditions,
+            gc.is_available
+        FROM game_copies gc
+        INNER JOIN games g ON gc.game_id = g.game_id
+        WHERE gc.is_available = 1
+        ORDER BY g.title, gc.inventory_number";
+            return dbManager.Select(query);
+        }
+
+        public DataTable GetSessionGames(int sessionId)
+        {
+            string query = @"
+        SELECT 
+            sg.Id_Record AS record_id,
+            sg.copy_id,
+            g.title AS game_title,
+            gc.inventory_number,
+            sg.quantity,
+            sg.taken_at,
+            sg.returned_at
+        FROM session_games sg
+        INNER JOIN game_copies gc ON sg.copy_id = gc.copy_id
+        INNER JOIN games g ON gc.game_id = g.game_id
+        WHERE sg.session_id = @session_id
+        ORDER BY sg.taken_at";
+            return dbManager.Select(query, new Dictionary<string, object> { { "@session_id", sessionId } });
+        }
+
+        public void ClearSessionGames(int sessionId)
+        {
+            string sql = "DELETE FROM session_games WHERE session_id = @sid";
+            dbManager.NonQuery(sql, new Dictionary<string, object> { { "@sid", sessionId } });
+        }
+
+        public void AddGameToSession(int sessionId, int copyId, int quantity = 1)
+        {
+            string sql = @"
+        INSERT INTO session_games 
+        (session_id, copy_id, quantity, taken_at)
+        VALUES 
+        (@sid, @copy_id, @quantity, NOW())";
+            dbManager.NonQuery(sql, new Dictionary<string, object>
+    {
+        { "@sid", sessionId },
+        { "@copy_id", copyId },
+        { "@quantity", quantity }
+    });
+        }
         #endregion
     }
 }

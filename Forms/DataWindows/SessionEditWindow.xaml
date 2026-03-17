@@ -5,15 +5,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="Редактирование сессии"
-        Height="731"
+        Height="801"
         Width="629"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
         ResizeMode="NoResize"
         Background="#EEF6FF">
-
-    <Window.Resources>
-    </Window.Resources>
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -248,6 +245,62 @@
                     </ListView.View>
 
                 </ListView>
+
+                <!-- Игры -->
+                <!-- Игра -->
+                <TextBlock Text="Игра"
+           FontSize="14"
+           FontWeight="Medium"
+           Foreground="{StaticResource TextBlueDark}"
+           Margin="0,20,0,8"/>
+
+                <StackPanel Orientation="Horizontal"
+            Margin="0,0,0,12">
+
+                    <ComboBox x:Name="cmbGame"
+              Style="{StaticResource FilterComboBoxStyle}"
+              Width="320"
+              Height="48"
+              DisplayMemberPath="DisplayName"
+              SelectedValuePath="CopyId"
+              IsEditable="False"/>
+
+                    <Button x:Name="btnSetGame"
+            Content="✓"
+            Width="48"
+            Height="48"
+            Margin="8,0,0,0"
+            Style="{StaticResource CustomBlueButtonStyle}"
+            Background="#28a745"
+            BorderBrush="#28a745"
+            Click="btnSetGame_Click"/>
+
+                    <Button x:Name="btnClearGame"
+            Content="✖"
+            Width="48"
+            Height="48"
+            Margin="8,0,0,0"
+            Style="{StaticResource CustomBlueButtonStyle}"
+            Background="#dc3545"
+            BorderBrush="#dc3545"
+            Click="btnClearGame_Click"/>
+                </StackPanel>
+
+                <Border x:Name="borderSelectedGame"
+        Style="{StaticResource InputBorderStyle}"
+        Background="#F0F8FF"
+        Margin="0,0,0,16"
+        Padding="16,12">
+                    <StackPanel>
+                        <TextBlock x:Name="tbSelectedGame"
+                   Text="Игра не выбрана"
+                   FontSize="15"
+                   Foreground="#666"/>
+                        <TextBlock x:Name="tbGameInventory"
+                   FontSize="13"
+                   Foreground="#888"/>
+                    </StackPanel>
+                </Border>
 
                 <!-- Стоимость -->
                 <Grid Height="62" Margin="0,0,0,16">

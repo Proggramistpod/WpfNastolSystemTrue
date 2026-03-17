@@ -13,8 +13,4 @@
     <PackageReference Include="PDFsharp" Version="6.2.4" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Style\" />
-  </ItemGroup>
-
 </Project>
