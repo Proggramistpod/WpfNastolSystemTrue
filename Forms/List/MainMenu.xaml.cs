@@ -14,17 +14,6 @@ namespace WpfNastolSystem.Forms.List
 {
     public partial class MainMenu : Page
     {
-        private readonly string[] _allTables =
-        {
-            "games",
-            "persons",
-            "sessions",
-            "categories",
-            "game_copies",
-            "tables",
-            "accounts",
-            "roles"
-        };
         private readonly DataBaseQuery _db = new();
         private DataTable? _currentData;
         private string _currentTable = "games";
@@ -34,9 +23,6 @@ namespace WpfNastolSystem.Forms.List
             InitializeComponent();
             ApplyRoleRestrictions();
         }
-        // Удаляем дублирующийся метод btnDocuments_Loaded
-        // Оставляем только одну чистую реализацию
-
         private void btnDocuments_Loaded(object sender, RoutedEventArgs e)
         {
             string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
@@ -55,7 +41,6 @@ namespace WpfNastolSystem.Forms.List
                 ctxMenu.Items.Add(miIncoming);
             }
 
-            // Чек по сессии — для кассира и админа
             if (role is "cashier" or "admin")
             {
                 var miCheck = new MenuItem
@@ -67,7 +52,6 @@ namespace WpfNastolSystem.Forms.List
                 ctxMenu.Items.Add(miCheck);
             }
 
-            // Если пунктов меню нет → отключаем кнопку
             if (ctxMenu.Items.Count == 0)
             {
                 btnDocuments.IsEnabled = false;
@@ -438,8 +422,7 @@ namespace WpfNastolSystem.Forms.List
 
         private IEnumerable<Button> GetMenuButtons()
         {
-            // Предполагаем, что StackPanel с кнопками находится внутри ScrollViewer внутри Border (первый столбец)
-            if (this.FindName("MainGrid") is Grid mainGrid &&   // если Grid не имеет x:Name — переименуй в XAML <Grid x:Name="MainGrid">
+            if (this.FindName("MainGrid") is Grid mainGrid &&  
                 mainGrid.Children[0] is Border leftBorder &&
                 leftBorder.Child is ScrollViewer scroll &&
                 scroll.Content is StackPanel menuPanel)
@@ -567,10 +550,8 @@ namespace WpfNastolSystem.Forms.List
                 "login" => "Логин",
                 "person_name" => "Владелец",
 
-                // Roles
                 "code" => "Код",
 
-                // Если колонка не найдена
                 _ => column
             };
         #endregion

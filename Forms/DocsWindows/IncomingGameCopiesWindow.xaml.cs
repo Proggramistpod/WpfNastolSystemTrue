@@ -1,209 +1,219 @@
 ﻿using PdfSharp.Drawing;
+using PdfSharp.Fonts;
 using PdfSharp.Pdf;
-using PdfSharp.UniversalAccessibility;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
+using WpfNastolSystem.Style;
 
 namespace WpfNastolSystem.Windows
 {
     public partial class IncomingGameCopiesWindow : Window
     {
         private readonly DbManager _db = new();
-        private ObservableCollection<IncomingItem> _items = new();
+        private ObservableCollection<IncomingViewItem> _items = new();
 
         public IncomingGameCopiesWindow()
         {
             InitializeComponent();
-            tbDate.Text = $"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}";
-
-            // Загружаем список игр для ComboBox
-            LoadGamesIntoCombo();
-
+            GlobalFontSettings.FontResolver = new WindowsFontResolver();
+            dpDate.SelectedDate = DateTime.Now;
             dgItems.ItemsSource = _items;
-
-            // Пример начальной пустой строки
-            _items.Add(new IncomingItem());
         }
 
-        private void LoadGamesIntoCombo()
+        private string TranslateCondition(string condition)
         {
-            string query = "SELECT game_id, title FROM games ORDER BY title";
-            DataTable games = _db.Select(query);
-
-            var comboColumn = dgItems.Columns.OfType<DataGridComboBoxColumn>()
-                .First(c => c.Header.ToString() == "Игра");
-
-            comboColumn.ItemsSource = games.DefaultView;
-        }
-
-        private void BtnAddRow_Click(object sender, RoutedEventArgs e)
-        {
-            _items.Add(new IncomingItem());
-            dgItems.ScrollIntoView(_items.Last());
-        }
-
-        private void dgItems_BeginningEdit(object sender, DataGridBeginningEditEventArgs e)
-        {
-            // Можно добавить валидацию при начале редактирования
-        }
-
-        private void dgItems_RowEditEnding(object sender, DataGridRowEditEndingEventArgs e)
-        {
-            if (e.EditAction == DataGridEditAction.Commit)
+            return condition?.ToLower() switch
             {
-                var item = e.Row.Item as IncomingItem;
-                if (item != null && item.game_id <= 0)
-                {
-                    MessageBox.Show("Выберите игру.");
-                    e.Cancel = true;
-                }
-            }
+                "good" => "Хорошее",
+                "fair" => "Удовлетворительное",
+                "bad" => "Плохое",
+                "new" => "Новое",
+                _ => condition ?? "-"
+            };
         }
-
-        private void BtnSaveAndPrint_Click(object sender, RoutedEventArgs e)
+        private void BtnLoad_Click(object sender, RoutedEventArgs e)
         {
-            dgItems.CommitEdit(DataGridEditingUnit.Row, true);
-
-            var validItems = _items.Where(i => i.game_id > 0 && i.quantity > 0).ToList();
-
-            if (!validItems.Any())
+            if (dpDate.SelectedDate == null)
             {
-                MessageBox.Show("Добавьте хотя бы одну позицию с игрой и количеством > 0.");
+                MessageBox.Show("Выберите дату");
                 return;
             }
 
-            try
+            DateTime date = dpDate.SelectedDate.Value;
+
+            string sql = @"
+                SELECT 
+                    g.title,
+                    gc.inventory_number,
+                    gc.acquired_date,
+                    gc.location,
+                    gc.conditions
+                FROM game_copies gc
+                JOIN games g ON g.game_id = gc.game_id
+                WHERE DATE(gc.acquired_date) = @date
+                ORDER BY g.title";
+
+            DataTable table = _db.Select(sql, new Dictionary<string, object>
             {
-                _db.InTransaction((conn, tx) =>
+                { "@date", date.ToString("yyyy-MM-dd") }
+            });
+
+            _items.Clear();
+
+            foreach (DataRow row in table.Rows)
+            {
+                _items.Add(new IncomingViewItem
                 {
-                    foreach (var item in validItems)
-                    {
-                        for (int i = 0; i < item.quantity; i++)
-                        {
-                            string invNumber = $"{item.start_inventory ?? "INV"}{(i + 1):D4}";
-
-                            var pars = new Dictionary<string, object>
-                            {
-                                { "@game_id", item.game_id },
-                                { "@inventory_number", invNumber },
-                                { "@acquired_date", DateTime.Now },
-                                { "@location", item.location ?? "Склад 1" },
-                                { "@is_available", 1 },
-                                { "@conditions", item.conditions ?? "Новая" },
-                                { "@notes", $"Приход {DateTime.Now:dd.MM.yyyy} | {item.notes ?? ""}" }
-                            };
-
-                            string sql = @"
-                                INSERT INTO game_copies 
-                                (game_id, inventory_number, acquired_date, location, is_available, conditions, notes)
-                                VALUES (@game_id, @inventory_number, @acquired_date, @location, @is_available, @conditions, @notes)";
-
-                            _db.NonQuery(sql, pars);
-                        }
-                    }
+                    GameTitle = row["title"].ToString(),
+                    InventoryNumber = row["inventory_number"].ToString(),
+                    AcquiredDate = Convert.ToDateTime(row["acquired_date"]),
+                    Location = row["location"].ToString(),
+                    Conditions = row["conditions"].ToString()
                 });
-
-                // Генерация PDF
-                string pdfPath = GenerateIncomingPdf(validItems);
-
-                MessageBox.Show($"Приход успешно сохранён.\nНакладная: {pdfPath}", "Успех");
-
-                try { Process.Start(new ProcessStartInfo(pdfPath) { UseShellExecute = true }); }
-                catch { }
-
-                DialogResult = true;
-                Close();
             }
-            catch (Exception ex)
+
+            // ❗ Валидация
+            if (!_items.Any())
             {
-                MessageBox.Show($"Ошибка сохранения прихода:\n{ex.Message}", "Ошибка");
+                MessageBox.Show("За выбранную дату поступлений нет");
             }
         }
 
-        private string GenerateIncomingPdf(List<IncomingItem> items)
+        private void BtnPrint_Click(object sender, RoutedEventArgs e)
+        {
+            if (!_items.Any())
+            {
+                MessageBox.Show("Нет данных для печати");
+                return;
+            }
+
+            DateTime date = dpDate.SelectedDate.Value;
+
+            string path = GeneratePdf(_items.ToList(), date);
+
+            MessageBox.Show($"PDF создан:\n{path}");
+
+            Process.Start(new ProcessStartInfo(path)
+            {
+                UseShellExecute = true
+            });
+        }
+
+        private string GeneratePdf(List<IncomingViewItem> items, DateTime date)
         {
             var doc = new PdfDocument();
-            doc.Info.Title = "Приходная накладная";
-            doc.Info.Subject = $"Поступление копий игр {DateTime.Now:dd.MM.yyyy}";
-
             var page = doc.AddPage();
-            page.Size = PdfSharp.PageSize.A4;
 
             var gfx = XGraphics.FromPdfPage(page);
+
             var fontTitle = new XFont("Arial", 16);
-            var fontHeader = new XFont("Arial", 12);
-            var fontNormal = new XFont("Arial", 11);
+            var fontHeader = new XFont("Arial", 11);
+            var font = new XFont("Arial", 10);
 
             int y = 40;
 
-            gfx.DrawString("ПРИХОДНАЯ НАКЛАДНАЯ", fontTitle, XBrushes.Black, new XRect(0, y, page.Width, 0), XStringFormats.TopCenter);
+            // Заголовок
+            gfx.DrawString("ОТЧЕТ ПО ПОСТУПЛЕНИЯМ", fontHeader, XBrushes.Blue,
+                           new XRect(0, y, page.Width, 20), XStringFormats.TopCenter);
+
             y += 40;
 
-            gfx.DrawString($"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 30;
+            gfx.DrawString($"Дата: {date:dd.MM.yyyy}",
+                font,
+                XBrushes.Black,
+                40, y);
 
-            // Шапка таблицы
-            gfx.DrawString("№", fontHeader, XBrushes.Black, 40, y);
-            gfx.DrawString("Игра", fontHeader, XBrushes.Black, 80, y);
-            gfx.DrawString("Кол-во", fontHeader, XBrushes.Black, 400, y);
-            gfx.DrawString("Состояние", fontHeader, XBrushes.Black, 480, y);
-            gfx.DrawString("Инв. номер(а)", fontHeader, XBrushes.Black, 580, y);
-            y += 25;
+            y += 30;
 
-            gfx.DrawLine(XPens.Black, 35, y, page.Width - 35, y); y += 10;
+            // --- Таблица ---
+            int startX = 40;
 
-            int index = 1;
+            int colNum = startX;
+            int colGame = colNum + 30;
+            int colInv = colGame + 200;
+            int colCond = colInv + 120;
+            int colLoc = colCond + 120;
+
+            // Заголовки
+            gfx.DrawString("№", fontHeader, XBrushes.Black, colNum, y);
+            gfx.DrawString("Игра", fontHeader, XBrushes.Black, colGame, y);
+            gfx.DrawString("Инв. номер", fontHeader, XBrushes.Black, colInv, y);
+            gfx.DrawString("Состояние", fontHeader, XBrushes.Black, colCond, y);
+            gfx.DrawString("Место", fontHeader, XBrushes.Black, colLoc, y);
+
+            y += 15;
+
+            gfx.DrawLine(XPens.Black, startX, y, page.Width - 40, y);
+            y += 10;
+
+            int i = 1;
+
             foreach (var item in items)
             {
-                string gameName = GetGameTitleById(item.game_id);
-                string invRange = $"{item.start_inventory ?? "—"} × {item.quantity}";
+                // 👉 перенос на новую страницу если не хватает места
+                if (y > page.Height - 100)
+                {
+                    page = doc.AddPage();
+                    gfx = XGraphics.FromPdfPage(page);
+                    y = 40;
+                }
 
-                gfx.DrawString(index.ToString(), fontNormal, XBrushes.Black, 40, y);
-                gfx.DrawString(gameName, fontNormal, XBrushes.Black, 80, y);
-                gfx.DrawString(item.quantity.ToString(), fontNormal, XBrushes.Black, 400, y);
-                gfx.DrawString(item.conditions ?? "Новая", fontNormal, XBrushes.Black, 480, y);
-                gfx.DrawString(invRange, fontNormal, XBrushes.Black, 580, y);
+                gfx.DrawString(i.ToString(), font, XBrushes.Black, colNum, y);
+                gfx.DrawString(item.GameTitle, font, XBrushes.Black, colGame, y);
+                gfx.DrawString(item.InventoryNumber, font, XBrushes.Black, colInv, y);
 
-                y += 22;
-                index++;
+                gfx.DrawString(TranslateCondition(item.Conditions),
+                    font, XBrushes.Black, colCond, y);
+
+                gfx.DrawString(item.Location, font, XBrushes.Black, colLoc, y);
+
+                y += 18;
+                i++;
             }
 
-            string desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string filename = $"Приход_{DateTime.Now:yyyy-MM-dd_HH-mm}.pdf";
-            string path = Path.Combine(desktop, filename);
+            // --- Подпись ---
+            y += 30;
+
+            // если не помещается — новая страница
+            if (y > page.Height - 100)
+            {
+                page = doc.AddPage();
+                gfx = XGraphics.FromPdfPage(page);
+                y = 40;
+            }
+
+            gfx.DrawString("Принимал:", font, XBrushes.Black, 40, y);
+            gfx.DrawLine(XPens.Black, 110, y + 10, 300, y + 10);
+
+            gfx.DrawString("Подпись:", font, XBrushes.Black, 320, y);
+            gfx.DrawLine(XPens.Black, 390, y + 10, 550, y + 10);
+
+            // путь
+            string path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                $"Отчет_{date:yyyy-MM-dd}.pdf");
 
             doc.Save(path);
+
             return path;
         }
 
-        private string GetGameTitleById(int gameId)
-        {
-            string sql = "SELECT title FROM games WHERE game_id = @id";
-            var res = _db.Scalar(sql, new Dictionary<string, object> { { "@id", gameId } });
-            return res?.ToString() ?? $"Игра #{gameId}";
-        }
-
+        // =========================
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
             Close();
         }
     }
-
-    // Модель строки прихода
-    public class IncomingItem
+    public class IncomingViewItem
     {
-        public int game_id { get; set; }
-        public int quantity { get; set; } = 1;
-        public string? start_inventory { get; set; }
-        public string? conditions { get; set; } = "Новая";
-        public string? location { get; set; }
-        public string? notes { get; set; }
+        public string GameTitle { get; set; }
+        public string InventoryNumber { get; set; }
+        public DateTime AcquiredDate { get; set; }
+        public string Location { get; set; }
+        public string Conditions { get; set; }
     }
 }

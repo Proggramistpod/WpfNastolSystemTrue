@@ -19,11 +19,10 @@ namespace WpfNastolSystem.Windows
 
         public SessionSelectorWindow()
         {
-            GlobalFontSettings.FontResolver = new WindowsFontResolver(); // ЭТА СТРОКА
+            GlobalFontSettings.FontResolver = new WindowsFontResolver(); 
             InitializeComponent();
             LoadCompletedUnpaidSessions();
         }
-
         private void LoadCompletedUnpaidSessions()
         {
             try
