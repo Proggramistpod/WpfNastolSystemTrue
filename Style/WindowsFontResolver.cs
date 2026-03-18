@@ -37,7 +37,6 @@ namespace WpfNastolSystem.Style
                     return File.ReadAllBytes(fontPath);
             }
 
-            // Если ничего не нашли — возвращаем null (PdfSharp упадёт, но до этого не дойдёт)
             return null;
         }
 

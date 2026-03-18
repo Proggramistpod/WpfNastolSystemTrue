@@ -192,7 +192,6 @@ namespace WpfNastolSystem.Windows
 
             var gfx = XGraphics.FromPdfPage(page);
 
-            // Используем шрифты, которые точно есть в Windows
             var fontHeader = new XFont("Arial", 14);
             var fontBold = new XFont("Arial", 12);
             var fontNormal = new XFont("Arial", 11);
@@ -209,7 +208,7 @@ namespace WpfNastolSystem.Windows
             gfx.DrawString($"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 20;
 
             gfx.DrawString($"Игра: {gameTitles}", fontNormal, XBrushes.Black, 40, y); y += 18;
-            gfx.DrawString($"Стол №: {table}", fontNormal, XBrushes.Black, 40, y); y += 18;
+            gfx.DrawString($"Стол № {table}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Организатор: {organizer}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Время: {start:dd.MM.yyyy HH:mm} – {end:HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 18;
             gfx.DrawString($"Длительность: {hours:F1} ч", fontNormal, XBrushes.Black, 40, y); y += 25;

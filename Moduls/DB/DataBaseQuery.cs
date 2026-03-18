@@ -46,7 +46,7 @@ using WpfNastolSystem.Moduls.CurrentUser;
             var parameters = new Dictionary<string, object>
             {
                 { "@login",    login.Trim() },
-                { "@password", password }     // ← потом обязательно перейди на хеш!
+                { "@password", password }    
             };
 
             object? roleCodeObj = dbManager.Scalar(query, parameters);
@@ -59,9 +59,9 @@ using WpfNastolSystem.Moduls.CurrentUser;
 
             string roleCode = (roleCodeObj as string ?? "visitor").ToLowerInvariant();
 
-            DataCurrentUser.SetUser(roleCode);   // или просто SetRole(roleCode), если метод переименуешь
+            DataCurrentUser.SetUser(roleCode);  
 
-            return login;   // успех → возвращаем логин, как было в оригинале
+            return login;  
         }
         #endregion
 
@@ -147,7 +147,6 @@ using WpfNastolSystem.Moduls.CurrentUser;
 
                 dbManager.NonQuery(updateGameQuery, parameters);
 
-                // Удаляем старую связь
                 dbManager.NonQuery(
                     "DELETE FROM game_categories WHERE game_id = @game_id",
                     new Dictionary<string, object>
@@ -155,7 +154,6 @@ using WpfNastolSystem.Moduls.CurrentUser;
                 { "@game_id", parameters["@game_id"] }
                     });
 
-                // Добавляем новую
                 dbManager.NonQuery(
                     "INSERT INTO game_categories (game_id, category_id) VALUES (@game_id, @category_id)",
                     new Dictionary<string, object>
