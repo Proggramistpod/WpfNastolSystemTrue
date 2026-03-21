@@ -31,7 +31,6 @@ namespace WpfNastolSystem.Windows
                 "good" => "Хорошее",
                 "fair" => "Удовлетворительное",
                 "bad" => "Плохое",
-                "new" => "Новое",
                 _ => condition ?? "-"
             };
         }
@@ -186,15 +185,9 @@ namespace WpfNastolSystem.Windows
                 y = 40;
             }
 
-            gfx.DrawString("Принимал:", font, XBrushes.Black, 40, y);
-            gfx.DrawLine(XPens.Black, 110, y + 10, 300, y + 10);
-
-            gfx.DrawString("Подпись:", font, XBrushes.Black, 320, y);
-            gfx.DrawLine(XPens.Black, 390, y + 10, 550, y + 10);
-
             // путь
             string path = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 $"Отчет_{date:yyyy-MM-dd}.pdf");
 
             doc.Save(path);

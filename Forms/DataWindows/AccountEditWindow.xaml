@@ -82,12 +82,7 @@
                     <Border Style="{StaticResource InputBorderStyle}"/>
 
                     <DatePicker x:Name="BirthDatePicker"
-                Background="Transparent"
-                BorderThickness="0"
-                FontSize="15"
-                Padding="16,12,16,0"
-                VerticalContentAlignment="Center"
-                Margin="0,0,0,10"/>
+                  Style="{StaticResource ModernDatePickerStyle}" Margin="10,7,0,7"/>
 
                 </Grid>
 
@@ -98,8 +93,8 @@
                 <!-- Примечания -->
                 <Grid Height="100" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
-                    <TextBlock x:Name="HintNotes" Text="Примечания" 
-                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False" Height="46" VerticalAlignment="Top">
+                    <TextBlock x:Name="HintNotes" Text="Примечание" 
+                               Style="{StaticResource FloatingHintTextBoxStyle}" IsHitTestVisible="False" Height="46" VerticalAlignment="Top" Margin="0,8,0,0">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="NotesTransform"/>
                         </TextBlock.RenderTransform>

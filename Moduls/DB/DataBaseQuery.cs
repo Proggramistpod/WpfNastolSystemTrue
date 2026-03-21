@@ -8,6 +8,7 @@ using WpfNastolSystem.Moduls.CurrentUser;
         class DataBaseQuery
         {
             private readonly DbManager dbManager = new DbManager();
+
         public DataTable GetSessionParticipants(int sessionId)
         {
             string query = @"
@@ -24,6 +25,129 @@ using WpfNastolSystem.Moduls.CurrentUser;
 
             return dbManager.Select(query, new Dictionary<string, object> { { "@session_id", sessionId } });
         }
+        #region ИЗДАТЕЛИ
+        public DataTable GetPublishers()
+        {
+            string query = "SELECT publisher_id, name FROM publishers ORDER BY name";
+            return dbManager.Select(query);
+        }
+
+        public DataTable GetPublisherById(int id)
+        {
+            string query = "SELECT publisher_id, name FROM publishers WHERE publisher_id = @id";
+            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
+        }
+
+        public void InsertPublisher(Dictionary<string, object> parameters)
+        {
+            string query = "INSERT INTO publishers (name) VALUES (@name)";
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public void UpdatePublisher(Dictionary<string, object> parameters)
+        {
+            string query = "UPDATE publishers SET name = @name WHERE publisher_id = @publisher_id";
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public void DeletePublisher(int id)
+        {
+            string query = "DELETE FROM publishers WHERE publisher_id = @id";
+            dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
+        }
+        #endregion
+
+        #region ИГРЫ
+        public DataTable GetGamesForGrid()
+        {
+            string query = @"
+        SELECT
+            g.game_id,
+            g.title,
+            p.name AS publisher,
+            g.publish_year,
+            g.min_players,
+            g.max_players,
+            g.play_time_min,
+            g.age_rating,
+            g.bgg_rating,
+            g.description
+        FROM games g
+        LEFT JOIN publishers p ON g.publisher_id = p.publisher_id
+        ORDER BY g.title";
+            return dbManager.Select(query);
+        }
+
+        public DataTable GetGameById(int id)
+        {
+            string query = @"
+        SELECT g.*, gc.category_id
+        FROM games g
+        LEFT JOIN game_categories gc ON g.game_id = gc.game_id
+        WHERE g.game_id = @id";
+
+            return dbManager.Select(query,
+                new Dictionary<string, object> { { "@id", id } });
+        }
+
+        public void InsertGame(Dictionary<string, object> parameters)
+        {
+            string insertGameQuery = @"
+        INSERT INTO games
+        (title, publish_year, publisher_id, min_players, max_players,
+         play_time_min, age_rating, bgg_rating, price_per_hour, description)
+        VALUES
+        (@title, @publish_year, @publisher_id, @min_players, @max_players,
+         @play_time_min, @age_rating, @bgg_rating, @price_per_hour, @description);
+        SELECT LAST_INSERT_ID();";
+
+            object? gameId = dbManager.Scalar(insertGameQuery, parameters);
+
+            if (gameId != null)
+            {
+                string insertCategoryQuery = @"
+            INSERT INTO game_categories (game_id, category_id)
+            VALUES (@game_id, @category_id)";
+
+                dbManager.NonQuery(insertCategoryQuery, new Dictionary<string, object>
+        {
+            { "@game_id", gameId },
+            { "@category_id", parameters["@category_id"] }
+        });
+            }
+        }
+
+        public void UpdateGame(Dictionary<string, object> parameters)
+        {
+            string updateGameQuery = @"
+        UPDATE games SET
+            title = @title,
+            publish_year = @publish_year,
+            publisher_id = @publisher_id,
+            min_players = @min_players,
+            max_players = @max_players,
+            play_time_min = @play_time_min,
+            age_rating = @age_rating,
+            bgg_rating = @bgg_rating,
+            price_per_hour = @price_per_hour,
+            description = @description
+        WHERE game_id = @game_id";
+
+            dbManager.NonQuery(updateGameQuery, parameters);
+
+            dbManager.NonQuery(
+                "DELETE FROM game_categories WHERE game_id = @game_id",
+                new Dictionary<string, object> { { "@game_id", parameters["@game_id"] } });
+
+            dbManager.NonQuery(
+                "INSERT INTO game_categories (game_id, category_id) VALUES (@game_id, @category_id)",
+                new Dictionary<string, object>
+                {
+            { "@game_id", parameters["@game_id"] },
+            { "@category_id", parameters["@category_id"] }
+                });
+        }
+        #endregion
         #region АВТОРИЗАЦИЯ
         public string? AuthorizationUser(string login, string password)
         {
@@ -66,108 +190,7 @@ using WpfNastolSystem.Moduls.CurrentUser;
         #endregion
 
         #region ИГРЫ
-        public DataTable GetGamesForGrid()
-            {
-                string query = @"
-                    SELECT
-                        game_id,
-                        title,
-                        publish_year,
-                        publisher,
-                        min_players,
-                        max_players,
-                        play_time_min,
-                        age_rating,
-                        bgg_rating,
-                        description
-                    FROM games
-                    ORDER BY title";
-                return dbManager.Select(query);
-            }
 
-            public DataTable GetGameById(int id)
-            {
-                string query = @"
-            SELECT g.*, gc.category_id
-            FROM games g
-            LEFT JOIN game_categories gc 
-                ON g.game_id = gc.game_id
-            WHERE g.game_id = @id";
-
-                return dbManager.Select(query,
-                    new Dictionary<string, object>
-                    {
-                { "@id", id }
-                    });
-            }
-
-            public void InsertGame(Dictionary<string, object> parameters)
-            {
-                string insertGameQuery = @"
-            INSERT INTO games
-            (title, publish_year, publisher, min_players, max_players,
-             play_time_min, age_rating, bgg_rating, is_active, description)
-            VALUES
-            (@title, @publish_year, @publisher, @min_players, @max_players,
-             @play_time_min, @age_rating, @bgg_rating, 1, @description);
-            SELECT LAST_INSERT_ID();";
-
-                object? gameId = dbManager.Scalar(insertGameQuery, parameters);
-
-                if (gameId != null)
-                {
-                    string insertCategoryQuery = @"
-                INSERT INTO game_categories (game_id, category_id)
-                VALUES (@game_id, @category_id)";
-
-                    dbManager.NonQuery(insertCategoryQuery, new Dictionary<string, object>
-            {
-                { "@game_id", gameId },
-                { "@category_id", parameters["@category_id"] }
-            });
-                }
-            }
-
-
-            public void UpdateGame(Dictionary<string, object> parameters)
-            {
-                string updateGameQuery = @"
-            UPDATE games SET
-                title = @title,
-                publish_year = @publish_year,
-                publisher = @publisher,
-                min_players = @min_players,
-                max_players = @max_players,
-                play_time_min = @play_time_min,
-                age_rating = @age_rating,
-                bgg_rating = @bgg_rating,
-                is_active = 1,
-                description = @description
-            WHERE game_id = @game_id";
-
-                dbManager.NonQuery(updateGameQuery, parameters);
-
-                dbManager.NonQuery(
-                    "DELETE FROM game_categories WHERE game_id = @game_id",
-                    new Dictionary<string, object>
-                    {
-                { "@game_id", parameters["@game_id"] }
-                    });
-
-                dbManager.NonQuery(
-                    "INSERT INTO game_categories (game_id, category_id) VALUES (@game_id, @category_id)",
-                    new Dictionary<string, object>
-                    {
-                { "@game_id", parameters["@game_id"] },
-                { "@category_id", parameters["@category_id"] }
-                    });
-            }
-
-            public void DeleteGame(int id)
-            {
-                string query = "DELETE FROM games WHERE game_id = @id";
-                dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
-            }
         #endregion
 
 
@@ -278,6 +301,7 @@ using WpfNastolSystem.Moduls.CurrentUser;
                     "tables" => GetTablesForGrid(),
                     "accounts" => GetAccountsForGrid(),
                     "roles" => GetRolesForGrid(),
+                    "publishers" => GetPublishers(),
                     _ => throw new Exception($"Неизвестная таблица: {tableName}")
                 };
             }

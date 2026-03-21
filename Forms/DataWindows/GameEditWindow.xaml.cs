@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
 
@@ -18,19 +19,17 @@ namespace WpfNastolSystem.Forms.Edit
         {
             public int Id { get; set; }
             public string Name { get; set; } = string.Empty;
-
-            // Переопределяем ToString, чтобы избежать вывода { Id = 1, Name = ... }
             public override string ToString() => Name ?? "(без названия)";
         }
-        public class RoleItem
+
+        // Вложенный класс для издателей
+        public class PublisherItem
         {
             public int Id { get; set; }
-            public string Name { get; set; }
-            public override string ToString()
-            {
-                return Name;
-            }
+            public string Name { get; set; } = string.Empty;
+            public override string ToString() => Name;
         }
+
         public GameEditWindow(int? id = null)
         {
             InitializeComponent();
@@ -38,6 +37,7 @@ namespace WpfNastolSystem.Forms.Edit
             _gameId = id;
             ConfigureWindow();
             LoadCategories();
+            LoadPublishers();      // загрузка издателей
 
             if (_gameId.HasValue)
                 LoadGameData();
@@ -60,7 +60,7 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(TitleTextBox, HintTitle, TitleTransform);
             FloatingHintHelper.Attach(DescriptionTextBox, HintDescription, DescriptionTransform);
             FloatingHintHelper.Attach(YearTextBox, HintYear, YearTransform);
-            FloatingHintHelper.Attach(PublisherTextBox, HintPublisher, PublisherTransform);
+            // PublisherTextBox отсутствует – ничего не прикрепляем
             FloatingHintHelper.Attach(MinPlayersTextBox, HintMinPlayers, MinPlayersTransform);
             FloatingHintHelper.Attach(MaxPlayersTextBox, HintMaxPlayers, MaxPlayersTransform);
             FloatingHintHelper.Attach(PlayTimeTextBox, HintPlayTime, PlayTimeTransform);
@@ -100,14 +100,44 @@ namespace WpfNastolSystem.Forms.Edit
                 CategoryComboBox.ItemsSource = items;
                 CategoryComboBox.DisplayMemberPath = nameof(CategoryItem.Name);
                 CategoryComboBox.SelectedValuePath = nameof(CategoryItem.Id);
-
-                // Если нужно, чтобы при добавлении новой игры ничего не было выбрано по умолчанию
-                // CategoryComboBox.SelectedIndex = -1;
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Ошибка при загрузке категорий:\n" + ex.Message);
                 CategoryComboBox.IsEnabled = false;
+            }
+        }
+
+        private void LoadPublishers()
+        {
+            try
+            {
+                var table = _db.GetPublishers();
+                if (table == null || table.Rows.Count == 0)
+                {
+                    MessageBox.Show("В таблице publishers нет записей.");
+                    PublisherComboBox.IsEnabled = false;
+                    return;
+                }
+
+                var items = new List<PublisherItem>();
+                foreach (DataRow row in table.Rows)
+                {
+                    items.Add(new PublisherItem
+                    {
+                        Id = Convert.ToInt32(row["publisher_id"]),
+                        Name = row["name"]?.ToString() ?? "(без названия)"
+                    });
+                }
+
+                PublisherComboBox.ItemsSource = items;
+                PublisherComboBox.DisplayMemberPath = nameof(PublisherItem.Name);
+                PublisherComboBox.SelectedValuePath = nameof(PublisherItem.Id);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при загрузке издателей:\n" + ex.Message);
+                PublisherComboBox.IsEnabled = false;
             }
         }
 
@@ -121,16 +151,19 @@ namespace WpfNastolSystem.Forms.Edit
 
                 SetText(TitleTextBox, row["title"]);
                 SetText(DescriptionTextBox, row["description"]);
-                SetText(PublisherTextBox, row["publisher"]);
                 SetText(YearTextBox, row["publish_year"]);
                 SetText(MinPlayersTextBox, row["min_players"]);
                 SetText(MaxPlayersTextBox, row["max_players"]);
                 SetText(PlayTimeTextBox, row["play_time_min"]);
                 SetText(AgeRatingTextBox, row["age_rating"]);
                 SetText(BggRatingTextBox, row["bgg_rating"]);
-
-                // Новое поле
                 SetText(PricePerHourTextBox, row["price_per_hour"]);
+
+                // Устанавливаем издателя по ID
+                if (row["publisher_id"] != DBNull.Value)
+                {
+                    PublisherComboBox.SelectedValue = Convert.ToInt32(row["publisher_id"]);
+                }
 
                 if (row["category_id"] != DBNull.Value)
                 {
@@ -143,7 +176,7 @@ namespace WpfNastolSystem.Forms.Edit
             }
         }
 
-        private void SetText(System.Windows.Controls.TextBox box, object value)
+        private void SetText(TextBox box, object value)
         {
             box.Text = value == DBNull.Value || value == null ? "" : value.ToString();
         }
@@ -195,7 +228,7 @@ namespace WpfNastolSystem.Forms.Edit
 
             if (!TryParseInt(MaxPlayersTextBox.Text, min, 50, out int max))
                 return Fail($"Макс. игроков должно быть ≥ {min} и ≤ 50", MaxPlayersTextBox);
-                
+
             if (!TryParseDecimal(PricePerHourTextBox.Text, 0, 10000, out decimal pricePerHour))
                 return Fail("Цена за час: 0–10000 ₽", PricePerHourTextBox);
 
@@ -211,12 +244,15 @@ namespace WpfNastolSystem.Forms.Edit
             if (CategoryComboBox.SelectedValue == null)
                 return Fail("Выберите категорию", CategoryComboBox);
 
+            if (PublisherComboBox.SelectedValue == null)
+                return Fail("Выберите издателя", PublisherComboBox);
+
             parameters = new Dictionary<string, object>
             {
                 ["@title"] = TitleTextBox.Text.Trim(),
                 ["@description"] = string.IsNullOrWhiteSpace(DescriptionTextBox.Text) ? DBNull.Value : DescriptionTextBox.Text.Trim(),
                 ["@publish_year"] = year,
-                ["@publisher"] = PublisherTextBox.Text.Trim(),
+                ["@publisher_id"] = PublisherComboBox.SelectedValue,
                 ["@min_players"] = min,
                 ["@max_players"] = max,
                 ["@play_time_min"] = time,

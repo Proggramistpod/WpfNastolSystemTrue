@@ -23,6 +23,7 @@ namespace WpfNastolSystem.Forms.List
             InitializeComponent();
             ApplyRoleRestrictions();
         }
+
         private void btnDocuments_Loaded(object sender, RoutedEventArgs e)
         {
             string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
@@ -63,7 +64,6 @@ namespace WpfNastolSystem.Forms.List
             }
         }
 
-        // Обработка правой кнопки мыши (открытие контекстного меню)
         private void btnDocuments_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (btnDocuments.ContextMenu is { } menu)
@@ -74,7 +74,6 @@ namespace WpfNastolSystem.Forms.List
             }
         }
 
-        // Обычный левый клик по кнопке
         private void btnDocuments_Click(object sender, RoutedEventArgs e)
         {
             string role = (DataCurrentUser.RoleCode ?? "visitor").ToLowerInvariant();
@@ -109,13 +108,12 @@ namespace WpfNastolSystem.Forms.List
             }
         }
 
-        // Метод открытия окна выбора сессии и последующего чека
         private void OpenSessionSelectorForCheck()
         {
             var selector = new SessionSelectorWindow();
-            selector.ShowDialog();  // ← просто показываем, дальше всё делает само окно
-                                    // Никакого SelectedSessionId и второго окна больше не нужно
+            selector.ShowDialog();
         }
+
         #region Загрузка таблицы
         private void MenuButton_Click(object sender, RoutedEventArgs e)
         {
@@ -157,7 +155,8 @@ namespace WpfNastolSystem.Forms.List
 
             var hiddenColumns = new HashSet<string>
             {
-                "game_id", "person_id", "session_id", "category_id", "copy_id", "table_id", "account_id", "role_id",
+                "game_id", "person_id", "session_id", "category_id", "copy_id",
+                "table_id", "account_id", "role_id", "publisher_id", // добавлен publisher_id
                 "created_at", "registered_at"
             };
 
@@ -194,6 +193,7 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => new() { "Все", "Занятые", "Свободные" },
                 "accounts" => new() { "Все", "Активные", "Заблокированные" },
                 "roles" => new() { "Все" },
+                "publishers" => new() { "Все" }, // добавлено
                 _ => new() { "Все" }
             };
 
@@ -203,31 +203,30 @@ namespace WpfNastolSystem.Forms.List
 
             if (string.IsNullOrWhiteSpace(search))
             {
-                LoadData(); // Загружаем оригинальные данные
+                LoadData();
                 return;
             }
 
             ApplySearchFilter(search);
         }
+
         private void ApplySearchFilter(string search)
         {
             if (_currentData == null) return;
 
-            // Поиск без учёта регистра
             string lowerSearch = search.ToLower();
 
             var filteredRows = _currentData.AsEnumerable()
                 .Where(row =>
                     _currentData.Columns
                         .Cast<DataColumn>()
-                        .Where(c => !c.ColumnName.EndsWith("_id")) // исключаем ID
+                        .Where(c => !c.ColumnName.EndsWith("_id"))
                         .Any(c =>
                         {
                             var value = row[c];
                             if (value == null || value == DBNull.Value)
                                 return false;
 
-                            // Преобразуем в строку и ищем
                             return value.ToString()!.ToLower().Contains(lowerSearch);
                         })
                 );
@@ -241,6 +240,7 @@ namespace WpfNastolSystem.Forms.List
                 DataGrid.ItemsSource = null;
             }
         }
+
         private void FilterComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e) => ApplyFilter();
 
         private void ApplyFilter(string search = "")
@@ -255,7 +255,7 @@ namespace WpfNastolSystem.Forms.List
                 string escaped = search.Replace("'", "''");
                 var columnFilters = _currentData.Columns
                 .Cast<DataColumn>()
-                .Where(c => !c.ColumnName.EndsWith("_id"))  
+                .Where(c => !c.ColumnName.EndsWith("_id"))
                 .Select(c =>
                 {
                     if (c.DataType == typeof(string))
@@ -368,24 +368,26 @@ namespace WpfNastolSystem.Forms.List
                     break;
 
                 case "cashier":
-                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables" });
-                    LoadTable("sessions");          
+                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables"}); // добавлен publishers
+                    LoadTable("sessions");
                     break;
 
                 case "sklad":
-                    HideMenuButtonsExcept(new[] { "game_copies" });
-                    LoadTable("game_copies");       
+                    HideMenuButtonsExcept(new[] { "game_copies", "publishers" }); 
+                    LoadTable("game_copies");
                     break;
 
                 case "gamemaster":
                     HideMenuButtons(new[] { "accounts", "roles" });
-                    LoadTable("sessions");          
+                    LoadTable("sessions");
                     break;
+
                 default:
                     HideAllMenuButtons();
                     break;
             }
         }
+
         private void HideMenuButtonsExcept(string[] allowedTags)
         {
             var allowed = new HashSet<string>(allowedTags);
@@ -422,7 +424,7 @@ namespace WpfNastolSystem.Forms.List
 
         private IEnumerable<Button> GetMenuButtons()
         {
-            if (this.FindName("MainGrid") is Grid mainGrid &&  
+            if (this.FindName("MainGrid") is Grid mainGrid &&
                 mainGrid.Children[0] is Border leftBorder &&
                 leftBorder.Child is ScrollViewer scroll &&
                 scroll.Content is StackPanel menuPanel)
@@ -434,6 +436,7 @@ namespace WpfNastolSystem.Forms.List
                 }
             }
         }
+
         private void Logout_Click(object sender, RoutedEventArgs e)
         {
             if (MessageBox.Show("Выйти из системы?",
@@ -456,17 +459,18 @@ namespace WpfNastolSystem.Forms.List
         }
 
         private Window? GetEditWindow(string table, int? id) => table switch
-            {
-                "games" => new GameEditWindow(id),
-                "persons" => new PersonEditWindow(id),
-                "sessions" => new SessionEditWindow(id),
-                "categories" => new CategoryEditWindow(id),
-                "game_copies" => new GameCopyEditWindow(id),
-                "tables" => new TableEditWindow(id),
-                "accounts" => new AccountEditWindow(id),
-                "roles" => new RoleEditWindow(id),
-                _ => null
-            };
+        {
+            "games" => new GameEditWindow(id),
+            "persons" => new PersonEditWindow(id),
+            "sessions" => new SessionEditWindow(id),
+            "categories" => new CategoryEditWindow(id),
+            "game_copies" => new GameCopyEditWindow(id),
+            "tables" => new TableEditWindow(id),
+            "accounts" => new AccountEditWindow(id),
+            "roles" => new RoleEditWindow(id),
+            "publishers" => new PublisherEditWindow(id), // добавлено
+            _ => null
+        };
 
         private string? GetIdColumnName(string table) =>
             table switch
@@ -479,6 +483,7 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => "table_id",
                 "accounts" => "account_id",
                 "roles" => "role_id",
+                "publishers" => "publisher_id", // добавлено
                 _ => null
             };
 
@@ -493,10 +498,10 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => "Столы",
                 "accounts" => "Работники",
                 "roles" => "Роли",
+                "publishers" => "Издатели", // добавлено
                 _ => table
             };
 
-        // Переводы только для отображаемых колонок
         private string GetRussianColumnName(string column) =>
             column switch
             {
@@ -551,6 +556,7 @@ namespace WpfNastolSystem.Forms.List
                 "person_name" => "Владелец",
 
                 "code" => "Код",
+
 
                 _ => column
             };

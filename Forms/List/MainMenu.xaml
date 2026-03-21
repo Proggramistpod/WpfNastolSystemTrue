@@ -58,7 +58,10 @@
                                 Style="{StaticResource ModernMenuButtonStyle}"
                                 Tag="roles"
                                 Click="MenuButton_Click"/>
-
+                    <Button Content="📚 Издатели" 
+                    Style="{StaticResource ModernMenuButtonStyle}"
+                    Tag="publishers"
+                    Click="MenuButton_Click"/>
                     <Separator Margin="16,10" Background="{StaticResource BorderBlue}"/>
 
                     <!-- Кнопка настроек -->
