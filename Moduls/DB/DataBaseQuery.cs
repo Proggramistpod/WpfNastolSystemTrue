@@ -126,7 +126,7 @@ namespace WpfNastolSystem.Moduls.DB
                     age_rating = @age_rating,
                     bgg_rating = @bgg_rating,
                     price_per_hour = @price_per_hour,
-                    is_active = @is_active,
+                    is_active = 1,
                     description = @description
                 WHERE game_id = @game_id";
             dbManager.NonQuery(updateGameQuery, parameters);
@@ -157,7 +157,7 @@ namespace WpfNastolSystem.Moduls.DB
                 FROM accounts a
                 INNER JOIN persons p ON a.person_id = p.person_id
                 LEFT JOIN roles r ON p.role_id = r.role_id
-                WHERE a.login = @login 
+                WHERE a.login = @login AND p.is_active = 1 AND a.is_active = 1
                   AND a.password = @password
                   AND a.is_active = 1
                   AND p.is_active = 1
@@ -471,8 +471,6 @@ namespace WpfNastolSystem.Moduls.DB
             }
             dbManager.NonQuery(query, parameters);
         }
-
-        // В DataBaseQuery.cs замените следующие методы:
 
         #region СТОЛЫ
         public DataTable GetTablesForGrid()

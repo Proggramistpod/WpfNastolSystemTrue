@@ -19,7 +19,6 @@ namespace WpfNastolSystem.Forms.Edit
             public override string ToString() => Title ?? "(без названия)";
         }
 
-        // Enum для состояний игры (соответствует ENUM в БД: 'good', 'fair', 'bad')
         public enum GameCondition
         {
             [Description("Отличное")]
@@ -56,7 +55,6 @@ namespace WpfNastolSystem.Forms.Edit
         {
             ConditionComboBox.Items.Clear();
 
-            // Заполняем ComboBox значениями из enum с описаниями
             foreach (GameCondition condition in Enum.GetValues(typeof(GameCondition)))
             {
                 var item = new ComboBoxItem
@@ -67,7 +65,7 @@ namespace WpfNastolSystem.Forms.Edit
                 ConditionComboBox.Items.Add(item);
             }
 
-            ConditionComboBox.SelectedIndex = 0; // Отличное по умолчанию
+            ConditionComboBox.SelectedIndex = 0; 
         }
 
         private string GetEnumDescription(Enum value)
@@ -158,15 +156,12 @@ namespace WpfNastolSystem.Forms.Edit
                 IsAvailableCheckBox.IsChecked = row["is_available"] != DBNull.Value &&
                                                Convert.ToInt32(row["is_available"]) == 1;
 
-                // Загружаем состояние (в БД хранится как 'good', 'fair', 'bad')
                 if (row["conditions"] != DBNull.Value)
                 {
                     string conditionValue = row["conditions"].ToString() ?? "good";
 
-                    // Парсим строку в enum
                     if (Enum.TryParse<GameCondition>(conditionValue, true, out GameCondition condition))
                     {
-                        // Находим соответствующий элемент в ComboBox
                         foreach (ComboBoxItem item in ConditionComboBox.Items)
                         {
                             if (item.Tag is GameCondition cond && cond == condition)
@@ -216,13 +211,11 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void InsertGameCopy(Dictionary<string, object> parameters)
         {
-            // Используем метод из DataBaseQuery
             _db.InsertGameCopy(parameters);
         }
 
         private void UpdateGameCopy(Dictionary<string, object> parameters)
         {
-            // Используем метод из DataBaseQuery
             _db.UpdateGameCopy(parameters);
         }
 
@@ -230,11 +223,9 @@ namespace WpfNastolSystem.Forms.Edit
         {
             parameters = new Dictionary<string, object>();
 
-            // Проверка выбора игры
             if (GameComboBox.SelectedValue == null)
                 return Fail("Выберите игру", GameComboBox);
 
-            // Проверка инвентарного номера
             if (string.IsNullOrWhiteSpace(InventoryNumberTextBox.Text))
                 return Fail("Введите инвентарный номер", InventoryNumberTextBox);
 
