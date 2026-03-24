@@ -45,21 +45,23 @@ namespace WpfNastolSystem.Windows
             DateTime date = dpDate.SelectedDate.Value;
 
             string sql = @"
-                SELECT 
-                    g.title,
-                    gc.inventory_number,
-                    gc.acquired_date,
-                    gc.location,
-                    gc.conditions
-                FROM game_copies gc
-                JOIN games g ON g.game_id = gc.game_id
-                WHERE DATE(gc.acquired_date) = @date
-                ORDER BY g.title";
+        SELECT 
+            g.title,
+            gc.inventory_number,
+            gc.acquired_date,
+            gc.location,
+            gc.conditions
+        FROM game_copies gc
+        JOIN games g ON g.game_id = gc.game_id
+        WHERE DATE(gc.acquired_date) = @date
+          AND gc.is_active = 1
+          AND g.is_active = 1
+        ORDER BY g.title";
 
             DataTable table = _db.Select(sql, new Dictionary<string, object>
-            {
-                { "@date", date.ToString("yyyy-MM-dd") }
-            });
+    {
+        { "@date", date.ToString("yyyy-MM-dd") }
+    });
 
             _items.Clear();
 
@@ -75,12 +77,11 @@ namespace WpfNastolSystem.Windows
                 });
             }
 
-            // ❗ Валидация
             if (!_items.Any())
             {
                 MessageBox.Show("За выбранную дату поступлений нет");
             }
-        }
+        }   
 
         private void BtnPrint_Click(object sender, RoutedEventArgs e)
         {

@@ -17,7 +17,7 @@ namespace WpfNastolSystem.Forms.List
         private readonly DataBaseQuery _db = new();
         private DataTable? _currentData;
         private string _currentTable = "games";
-
+        private List<string> _visibleColumns = new();
         public MainMenu()
         {
             InitializeComponent();
@@ -152,18 +152,22 @@ namespace WpfNastolSystem.Forms.List
         private void GenerateColumns(DataTable table)
         {
             DataGrid.Columns.Clear();
+            _visibleColumns.Clear(); // очищаем перед заполнением
 
             var hiddenColumns = new HashSet<string>
-            {
-                "game_id", "person_id", "session_id", "category_id", "copy_id",
-                "table_id", "account_id", "role_id", "publisher_id", // добавлен publisher_id
-                "created_at", "registered_at"
-            };
+        {
+            "game_id", "person_id", "session_id", "category_id", "copy_id",
+            "table_id", "account_id", "role_id", "publisher_id",
+            "created_at", "registered_at"
+        };
 
             foreach (DataColumn column in table.Columns)
             {
                 if (hiddenColumns.Contains(column.ColumnName))
                     continue;
+
+                // сохраняем имя видимой колонки
+                _visibleColumns.Add(column.ColumnName);
 
                 DataGrid.Columns.Add(new DataGridTextColumn
                 {
@@ -216,24 +220,23 @@ namespace WpfNastolSystem.Forms.List
 
             string lowerSearch = search.ToLower();
 
+            // фильтруем строки по видимым колонкам
             var filteredRows = _currentData.AsEnumerable()
                 .Where(row =>
-                    _currentData.Columns
-                        .Cast<DataColumn>()
-                        .Where(c => !c.ColumnName.EndsWith("_id"))
-                        .Any(c =>
-                        {
-                            var value = row[c];
-                            if (value == null || value == DBNull.Value)
-                                return false;
-
-                            return value.ToString()!.ToLower().Contains(lowerSearch);
-                        })
+                    _visibleColumns.Any(colName =>
+                    {
+                        var value = row[colName];
+                        if (value == null || value == DBNull.Value)
+                            return false;
+                        return value.ToString()!.ToLower().Contains(lowerSearch);
+                    })
                 );
 
             if (filteredRows.Any())
             {
-                DataGrid.ItemsSource = filteredRows.CopyToDataTable().DefaultView;
+                // создаём новую DataTable только с отфильтрованными строками
+                DataTable filteredTable = filteredRows.CopyToDataTable();
+                DataGrid.ItemsSource = filteredTable.DefaultView;
             }
             else
             {

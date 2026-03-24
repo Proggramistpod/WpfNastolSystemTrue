@@ -35,7 +35,6 @@ namespace WpfNastolSystem.Forms.Edit
         {
             FloatingHintHelper.Attach(TableNumberTextBox, HintTableNumber, TableNumberTransform);
             FloatingHintHelper.Attach(CapacityTextBox, HintCapacity, CapacityTransform);
-            FloatingHintHelper.Attach(ZoneTextBox, HintZone, ZoneTransform);
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
         }
 
@@ -49,7 +48,6 @@ namespace WpfNastolSystem.Forms.Edit
                 var row = table.Rows[0];
                 SetText(TableNumberTextBox, row["table_number"]);
                 SetText(CapacityTextBox, row["capacity"]);
-                SetText(ZoneTextBox, row["zone"]);
 
                 if (row["is_available"] != DBNull.Value)
                 {
@@ -66,7 +64,8 @@ namespace WpfNastolSystem.Forms.Edit
 
         private DataTable GetTableById(int id)
         {
-            string query = @"SELECT * FROM tables WHERE table_id = @id";
+            // Явно перечисляем поля, исключая zone
+            string query = @"SELECT table_id, table_number, capacity, is_available, notes FROM tables WHERE table_id = @id";
             return new DbManager().Select(query, new Dictionary<string, object> { { "@id", id } });
         }
 
@@ -106,9 +105,9 @@ namespace WpfNastolSystem.Forms.Edit
         private void InsertTable(Dictionary<string, object> parameters)
         {
             string query = @"INSERT INTO tables 
-                (table_number, capacity, zone, is_available, notes)
+                (table_number, capacity, is_available, notes)
                 VALUES 
-                (@table_number, @capacity, @zone, @is_available, @notes)";
+                (@table_number, @capacity, @is_available, @notes)";
 
             new DbManager().NonQuery(query, parameters);
         }
@@ -118,7 +117,6 @@ namespace WpfNastolSystem.Forms.Edit
             string query = @"UPDATE tables SET
                 table_number = @table_number,
                 capacity = @capacity,
-                zone = @zone,
                 is_available = @is_available,
                 notes = @notes
                 WHERE table_id = @table_id";
@@ -139,10 +137,6 @@ namespace WpfNastolSystem.Forms.Edit
             if (!TryParseInt(CapacityTextBox.Text, 1, 20, out int capacity))
                 return Fail("Вместимость должна быть от 1 до 20 человек", CapacityTextBox);
 
-            // Проверка длины zone (VARCHAR(50))
-            if (!string.IsNullOrWhiteSpace(ZoneTextBox.Text) && ZoneTextBox.Text.Trim().Length > 50)
-                return Fail("Название зоны не может быть длиннее 50 символов", ZoneTextBox);
-
             // Проверка длины notes (VARCHAR(255))
             if (!string.IsNullOrWhiteSpace(NotesTextBox.Text) && NotesTextBox.Text.Trim().Length > 255)
                 return Fail("Примечания не могут быть длиннее 255 символов", NotesTextBox);
@@ -151,9 +145,7 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 ["@table_number"] = tableNumber,
                 ["@capacity"] = capacity,
-                ["@zone"] = string.IsNullOrWhiteSpace(ZoneTextBox.Text)
-                    ? DBNull.Value : ZoneTextBox.Text.Trim(),
-                ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0, // TINYINT(1)
+                ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0,
                 ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text)
                     ? DBNull.Value : NotesTextBox.Text.Trim()
             };

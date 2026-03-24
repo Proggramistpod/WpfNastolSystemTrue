@@ -161,7 +161,7 @@ namespace WpfNastolSystem.Forms.Edit
                 tables.Add(new TableItem
                 {
                     Id = Convert.ToInt32(row["table_id"]),
-                    DisplayText = $"Стол {row["table_number"]} • {row["capacity"]} чел. • {row["zone"]}"
+                    DisplayText = $"Стол {row["table_number"]} • {row["capacity"]} чел."
                 });
             }
             cmbTable.ItemsSource = tables;
@@ -221,10 +221,25 @@ namespace WpfNastolSystem.Forms.Edit
             }
 
             chkPaid.IsChecked = Convert.ToBoolean(r["paid"]);
+
+            // Загрузка способа оплаты
+            if (r["payment_method"] != DBNull.Value)
+            {
+                string method = r["payment_method"].ToString();
+                foreach (ComboBoxItem item in cmbPaymentMethod.Items)
+                {
+                    if (item.Tag?.ToString() == method)
+                    {
+                        cmbPaymentMethod.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+
             tbNotes.Text = r["notes"]?.ToString() ?? "";
 
             LoadParticipants();
-            LoadSessionGame(); // загружаем игру, привязанную к сессии
+            LoadSessionGame();
         }
 
         private void LoadParticipants()
@@ -249,7 +264,7 @@ namespace WpfNastolSystem.Forms.Edit
             var dt = _db.GetSessionGames(_sessionId.Value);
             if (dt.Rows.Count > 0)
             {
-                var row = dt.Rows[0]; // берём первую игру (по логике она одна)
+                var row = dt.Rows[0];
                 _selectedCopyId = Convert.ToInt32(row["copy_id"]);
                 _selectedGameTitle = row["game_title"].ToString();
                 _selectedInventoryNumber = row["inventory_number"].ToString();
@@ -280,7 +295,6 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateCalculatedCost()
         {
-            // без изменений (как в предыдущей версии)
             if (!dpStartDate.SelectedDate.HasValue ||
                 !int.TryParse(tbStartHour.Text, out int sh) ||
                 !int.TryParse(tbStartMinute.Text, out int sm) ||
@@ -385,7 +399,7 @@ namespace WpfNastolSystem.Forms.Edit
                 return;
             }
 
-            dynamic selected = cmbGame.SelectedItem; // анонимный тип
+            dynamic selected = cmbGame.SelectedItem;
             _selectedCopyId = selected.CopyId;
             _selectedGameTitle = selected.GameTitle;
             _selectedInventoryNumber = selected.InventoryNumber;
@@ -423,11 +437,9 @@ namespace WpfNastolSystem.Forms.Edit
                     targetSessionId = newId;
                 }
 
-                // Добавляем участников
                 foreach (int pid in participantIds)
                     _db.AddParticipantToSession(targetSessionId, pid);
 
-                // Добавляем игру (если выбрана)
                 if (_selectedCopyId.HasValue)
                     _db.AddGameToSession(targetSessionId, _selectedCopyId.Value);
 
@@ -510,6 +522,11 @@ namespace WpfNastolSystem.Forms.Edit
                 }
             }
 
+            // Определяем способ оплаты только если сессия оплачена
+            string paymentMethod = null;
+            if (chkPaid.IsChecked == true && cmbPaymentMethod.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag != null)
+                paymentMethod = selectedItem.Tag.ToString();
+
             parameters = new Dictionary<string, object>
             {
                 ["@organizer_id"] = cmbOrganizer.SelectedValue,
@@ -518,7 +535,8 @@ namespace WpfNastolSystem.Forms.Edit
                 ["@ended_at"] = endDt.HasValue ? endDt.Value.ToString("yyyy-MM-dd HH:mm:ss") : DBNull.Value,
                 ["@cost"] = cost,
                 ["@paid"] = chkPaid.IsChecked == true ? 1 : 0,
-                ["@notes"] = string.IsNullOrWhiteSpace(tbNotes.Text) ? DBNull.Value : tbNotes.Text.Trim(),
+                ["@payment_method"] = string.IsNullOrEmpty(paymentMethod) ? DBNull.Value : (object)paymentMethod,
+                ["@notes"] = string.IsNullOrWhiteSpace(tbNotes.Text) ? DBNull.Value : tbNotes.Text,
                 ["@created_by"] = _currentUserPersonId
             };
 

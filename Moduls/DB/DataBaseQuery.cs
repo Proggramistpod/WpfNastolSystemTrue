@@ -72,8 +72,6 @@ namespace WpfNastolSystem.Moduls.DB
                     g.play_time_min,
                     g.age_rating,
                     g.bgg_rating,
-                    g.price_per_hour,
-                    g.is_active,
                     g.description
                 FROM games g
                 LEFT JOIN publishers p ON g.publisher_id = p.publisher_id
@@ -189,21 +187,21 @@ namespace WpfNastolSystem.Moduls.DB
         public DataTable GetSessionsForGrid()
         {
             string query = @"
-                SELECT
-                    s.session_id,
-                    p.full_name AS organizer_name,
-                    t.table_number,
-                    s.started_at,
-                    s.ended_at,
-                    s.cost,
-                    s.paid,
-                    s.payment_method,
-                    s.notes
-                FROM sessions s
-                LEFT JOIN persons p ON s.organizer_id = p.person_id
-                LEFT JOIN tables t ON s.table_id = t.table_id
-                WHERE s.is_active = 1
-                ORDER BY s.started_at DESC";
+            SELECT
+                s.session_id,
+                p.full_name AS organizer_name,
+                t.table_number,
+                s.started_at,
+                s.ended_at,
+                s.cost,
+                IF(s.paid = 1, 'Да', 'Нет') AS paid,
+                s.payment_method,
+                s.notes
+            FROM sessions s
+            LEFT JOIN persons p ON s.organizer_id = p.person_id
+            LEFT JOIN tables t ON s.table_id = t.table_id
+            WHERE s.is_active = 1
+            ORDER BY s.started_at DESC";
             return dbManager.Select(query);
         }
 
@@ -238,31 +236,6 @@ namespace WpfNastolSystem.Moduls.DB
                 WHERE s.ended_at IS NULL AND s.is_active = 1
                 ORDER BY s.started_at DESC";
             return dbManager.Select(query);
-        }
-
-        public DataTable GetSessionsByDateRange(DateTime startDate, DateTime endDate)
-        {
-            string query = @"
-                SELECT
-                    s.session_id,
-                    p.full_name AS organizer_name,
-                    t.table_number,
-                    s.started_at,
-                    s.ended_at,
-                    s.cost,
-                    s.paid,
-                    s.payment_method
-                FROM sessions s
-                LEFT JOIN persons p ON s.organizer_id = p.person_id
-                LEFT JOIN tables t ON s.table_id = t.table_id
-                WHERE DATE(s.started_at) BETWEEN @start_date AND @end_date
-                  AND s.is_active = 1
-                ORDER BY s.started_at DESC";
-            return dbManager.Select(query, new Dictionary<string, object>
-            {
-                { "@start_date", startDate.ToString("yyyy-MM-dd") },
-                { "@end_date", endDate.ToString("yyyy-MM-dd") }
-            });
         }
 
         public int InsertSessionAndGetId(Dictionary<string, object> parameters)
@@ -320,15 +293,6 @@ namespace WpfNastolSystem.Moduls.DB
             return dbManager.Select(query);
         }
 
-        public DataTable GetCategoryById(int id)
-        {
-            string query = @"
-                SELECT category_id, name, description
-                FROM categories
-                WHERE category_id = @id";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
         public void InsertCategory(Dictionary<string, object> parameters)
         {
             string query = "INSERT INTO categories (name, description) VALUES (@name, @description)";
@@ -346,18 +310,18 @@ namespace WpfNastolSystem.Moduls.DB
         public DataTable GetGameCopiesForGrid()
         {
             string query = @"
-                SELECT
-                    gc.copy_id,
-                    g.title AS game_title,
-                    gc.inventory_number,
-                    gc.acquired_date,
-                    gc.location,
-                    gc.is_available,
-                    gc.notes
-                FROM game_copies gc
-                LEFT JOIN games g ON gc.game_id = g.game_id
-                WHERE gc.is_active = 1 AND g.is_active = 1
-                ORDER BY gc.inventory_number";
+            SELECT
+                gc.copy_id,
+                g.title AS game_title,
+                gc.inventory_number,
+                DATE_FORMAT(gc.acquired_date, '%d.%m.%Y') AS acquired_date,
+                gc.location,
+                IF(gc.is_available = 1, 'Да', 'Нет') AS is_available,
+                gc.notes
+            FROM game_copies gc
+            LEFT JOIN games g ON gc.game_id = g.game_id
+            WHERE gc.is_active = 1
+            ORDER BY gc.inventory_number";
             return dbManager.Select(query);
         }
 
@@ -467,95 +431,42 @@ namespace WpfNastolSystem.Moduls.DB
         public DataTable GetTablesForGrid()
         {
             string query = @"
-                SELECT
-                    table_id,
-                    table_number,
-                    capacity,
-                    zone,
-                    is_available,
-                    notes
-                FROM tables
-                WHERE is_active = 1
-                ORDER BY table_number";
+        SELECT
+            table_id,
+            table_number,
+            capacity,
+            IF(is_available = 1, 'Да', 'Нет') AS is_available,
+            notes
+        FROM tables
+        WHERE is_active = 1
+        ORDER BY table_number";
             return dbManager.Select(query);
         }
 
         public DataTable GetTableById(int id)
         {
-            string query = "SELECT * FROM tables WHERE table_id = @id";
+            string query = @"SELECT table_id, table_number, capacity, is_available, notes FROM tables WHERE table_id = @id";
             return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
         }
 
         public void InsertTable(Dictionary<string, object> parameters)
         {
             string query = @"
-                INSERT INTO tables 
-                (table_number, capacity, zone, is_available, notes, is_active)
-                VALUES (@table_number, @capacity, @zone, @is_available, @notes, 1)";
+        INSERT INTO tables 
+        (table_number, capacity, is_available, notes, is_active)
+        VALUES (@table_number, @capacity, @is_available, @notes, 1)";
             dbManager.NonQuery(query, parameters);
         }
 
         public void UpdateTable(Dictionary<string, object> parameters)
         {
             string query = @"
-                UPDATE tables SET
-                    table_number = @table_number,
-                    capacity = @capacity,
-                    zone = @zone,
-                    is_available = @is_available,
-                    notes = @notes
-                WHERE table_id = @table_id";
-            dbManager.NonQuery(query, parameters);
-        }
-        #endregion
-
-        #region АККАУНТЫ
-        public DataTable GetAccountsForGrid()
-        {
-            string query = @"
-                SELECT
-                    a.account_id,
-                    p.full_name AS full_name,
-                    r.name AS role_name,
-                    p.phone AS phone,
-                    a.login AS login
-                FROM accounts a
-                INNER JOIN persons p ON a.person_id = p.person_id
-                INNER JOIN roles r ON p.role_id = r.role_id
-                WHERE p.role_id != 1
-                  AND a.is_active = 1
-                  AND p.is_active = 1
-                ORDER BY p.full_name";
-            return dbManager.Select(query);
-        }
-
-        public DataTable GetAccountById(int id)
-        {
-            string query = "SELECT * FROM accounts WHERE account_id = @id";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
-        public void InsertAccount(Dictionary<string, object> parameters)
-        {
-            string query = @"
-                INSERT INTO accounts 
-                (person_id, login, password, created_at, is_active)
-                VALUES (@person_id, @login, @password, NOW(), 1)";
-            dbManager.NonQuery(query, parameters);
-        }
-
-        public void UpdateAccount(Dictionary<string, object> parameters)
-        {
-            bool updatePassword = parameters.ContainsKey("@password");
-            string query;
-            if (updatePassword)
-            {
-                query = @"UPDATE accounts SET login = @login, password = @password WHERE account_id = @account_id";
-            }
-            else
-            {
-                query = @"UPDATE accounts SET login = @login WHERE account_id = @account_id";
-            }
+        UPDATE tables SET
+            table_number = @table_number,
+            capacity = @capacity,
+            is_available = @is_available,
+            notes = @notes
+        WHERE table_id = @table_id";
             dbManager.NonQuery(query, parameters);
         }
         #endregion
@@ -565,26 +476,6 @@ namespace WpfNastolSystem.Moduls.DB
         {
             string query = "SELECT role_id, code, name, description FROM roles WHERE is_active = 1 ORDER BY name";
             return dbManager.Select(query);
-        }
-
-        public DataTable GetRoleById(int id)
-        {
-            string query = "SELECT * FROM roles WHERE role_id = @id";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
-        public void InsertRole(Dictionary<string, object> parameters)
-        {
-            string query = @"
-                INSERT INTO roles (code, name, description, is_active)
-                VALUES (@code, @name, @description, 1)";
-            dbManager.NonQuery(query, parameters);
-        }
-
-        public void UpdateRole(Dictionary<string, object> parameters)
-        {
-            string query = "UPDATE roles SET code = @code, name = @name, description = @description WHERE role_id = @role_id";
-            dbManager.NonQuery(query, parameters);
         }
         #endregion
 
@@ -634,13 +525,6 @@ namespace WpfNastolSystem.Moduls.DB
             dbManager.NonQuery(updateQuery, parameters);
         }
 
-        public void DeletePerson(int id)
-        {
-            // Мягкое удаление вместо физического
-            string query = "UPDATE persons SET is_active = 0 WHERE person_id = @id";
-            dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
         public bool IsEmailUnique(string email, int? excludePersonId = null)
         {
             string query = @"
@@ -667,162 +551,7 @@ namespace WpfNastolSystem.Moduls.DB
             return Convert.ToInt32(result) == 0;
         }
 
-        public DataTable SearchPersons(string searchTerm)
-        {
-            string query = @"
-                SELECT
-                    p.person_id,
-                    p.full_name,
-                    r.name AS role_name,
-                    p.phone,
-                    p.email,
-                    DATE_FORMAT(p.birth_date, '%d.%m.%Y') as birth_date,
-                    CASE WHEN p.is_banned = 1 THEN 'Да' ELSE 'Нет' END as is_banned
-                FROM persons p
-                LEFT JOIN roles r ON p.role_id = r.role_id
-                WHERE p.is_active = 1
-                  AND (p.full_name LIKE @search 
-                       OR p.phone LIKE @search 
-                       OR p.email LIKE @search)
-                ORDER BY p.full_name
-                LIMIT 50";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@search", $"%{searchTerm}%" } });
-        }
 
-        public DataTable GetPersonsByRole(int roleId)
-        {
-            string query = @"
-                SELECT
-                    p.person_id,
-                    p.full_name,
-                    p.phone,
-                    p.email,
-                    DATE_FORMAT(p.birth_date, '%d.%m.%Y') as birth_date,
-                    CASE WHEN p.is_banned = 1 THEN 'Да' ELSE 'Нет' END as is_banned
-                FROM persons p
-                WHERE p.role_id = @role_id AND p.is_active = 1
-                ORDER BY p.full_name";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@role_id", roleId } });
-        }
-
-        public DataTable GetActivePersons()
-        {
-            string query = @"
-                SELECT
-                    p.person_id,
-                    p.full_name,
-                    r.name AS role_name,
-                    p.phone,
-                    p.email,
-                    DATE_FORMAT(p.birth_date, '%d.%m.%Y') as birth_date
-                FROM persons p
-                LEFT JOIN roles r ON p.role_id = r.role_id
-                WHERE p.is_banned = 0 AND p.is_active = 1
-                ORDER BY p.full_name";
-            return dbManager.Select(query);
-        }
-
-        public int GetPersonsCount()
-        {
-            string query = "SELECT COUNT(*) FROM persons WHERE is_active = 1";
-            object result = dbManager.Scalar(query);
-            return Convert.ToInt32(result);
-        }
-
-        public int GetActivePersonsCount()
-        {
-            string query = "SELECT COUNT(*) FROM persons WHERE is_banned = 0 AND is_active = 1";
-            object result = dbManager.Scalar(query);
-            return Convert.ToInt32(result);
-        }
-
-        public DataTable GetPersonsWithAccounts()
-        {
-            string query = @"
-                SELECT
-                    p.person_id,
-                    p.full_name,
-                    a.login,
-                    DATE_FORMAT(a.created_at, '%d.%m.%Y %H:%i') as account_created
-                FROM persons p
-                INNER JOIN accounts a ON p.person_id = a.person_id
-                WHERE p.is_active = 1 AND a.is_active = 1
-                ORDER BY p.full_name";
-            return dbManager.Select(query);
-        }
-
-        public DataTable GetPersonsWithoutAccounts()
-        {
-            string query = @"
-                SELECT
-                    p.person_id,
-                    p.full_name,
-                    p.phone,
-                    p.email
-                FROM persons p
-                LEFT JOIN accounts a ON p.person_id = a.person_id
-                WHERE a.account_id IS NULL AND p.is_active = 1
-                ORDER BY p.full_name";
-            return dbManager.Select(query);
-        }
-
-        public void BanPerson(int personId)
-        {
-            string query = "UPDATE persons SET is_banned = 1 WHERE person_id = @person_id";
-            dbManager.NonQuery(query, new Dictionary<string, object> { { "@person_id", personId } });
-        }
-
-        public void UnbanPerson(int personId)
-        {
-            string query = "UPDATE persons SET is_banned = 0 WHERE person_id = @person_id";
-            dbManager.NonQuery(query, new Dictionary<string, object> { { "@person_id", personId } });
-        }
-
-        public DataTable GetPersonStatistics(int personId)
-        {
-            string query = @"
-                SELECT
-                    (SELECT COUNT(DISTINCT session_id) 
-                     FROM (
-                         SELECT session_id FROM sessions WHERE organizer_id = @person_id AND is_active = 1
-                         UNION
-                         SELECT session_id FROM session_participants sp 
-                         WHERE sp.person_id = @person_id
-                     ) AS s) AS total_sessions,
-                    (SELECT COUNT(DISTINCT session_id) 
-                     FROM (
-                         SELECT session_id FROM sessions WHERE organizer_id = @person_id AND ended_at IS NOT NULL AND is_active = 1
-                         UNION
-                         SELECT session_id FROM session_participants sp 
-                         JOIN sessions s ON sp.session_id = s.session_id 
-                         WHERE sp.person_id = @person_id AND s.ended_at IS NOT NULL AND s.is_active = 1
-                     ) AS s) AS completed_sessions,
-                    (SELECT COUNT(DISTINCT session_id) 
-                     FROM (
-                         SELECT session_id FROM sessions WHERE organizer_id = @person_id AND ended_at IS NULL AND is_active = 1
-                         UNION
-                         SELECT session_id FROM session_participants sp 
-                         JOIN sessions s ON sp.session_id = s.session_id 
-                         WHERE sp.person_id = @person_id AND s.ended_at IS NULL AND s.is_active = 1
-                     ) AS s) AS active_sessions,
-                    (SELECT COALESCE(SUM(cost), 0) 
-                     FROM sessions 
-                     WHERE (organizer_id = @person_id OR session_id IN (SELECT session_id FROM session_participants WHERE person_id = @person_id))
-                       AND paid = 1 AND is_active = 1) AS total_paid,
-                    (SELECT COALESCE(SUM(cost), 0) 
-                     FROM sessions 
-                     WHERE (organizer_id = @person_id OR session_id IN (SELECT session_id FROM session_participants WHERE person_id = @person_id))
-                       AND paid = 0 AND is_active = 1) AS total_debt,
-                    (SELECT MIN(started_at) 
-                     FROM sessions 
-                     WHERE (organizer_id = @person_id OR session_id IN (SELECT session_id FROM session_participants WHERE person_id = @person_id))
-                       AND is_active = 1) AS first_session,
-                    (SELECT MAX(started_at) 
-                     FROM sessions 
-                     WHERE (organizer_id = @person_id OR session_id IN (SELECT session_id FROM session_participants WHERE person_id = @person_id))
-                       AND is_active = 1) AS last_session";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@person_id", personId } });
-        }
         #endregion
 
         #region УНИВЕРСАЛЬНЫЕ МЕТОДЫ
