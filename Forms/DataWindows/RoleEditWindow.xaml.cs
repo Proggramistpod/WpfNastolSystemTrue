@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using System.Windows;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;

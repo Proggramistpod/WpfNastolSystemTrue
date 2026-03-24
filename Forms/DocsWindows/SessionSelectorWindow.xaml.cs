@@ -1,7 +1,6 @@
 ﻿using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
-using System;
 using System.Data;
 using System.Diagnostics;
 using System.IO;
@@ -19,7 +18,7 @@ namespace WpfNastolSystem.Windows
 
         public SessionSelectorWindow()
         {
-            GlobalFontSettings.FontResolver = new WindowsFontResolver(); 
+            GlobalFontSettings.FontResolver = new WindowsFontResolver();
             InitializeComponent();
             LoadCompletedUnpaidSessions();
         }
@@ -136,8 +135,7 @@ namespace WpfNastolSystem.Windows
         {
             try
             {
-                // Данные из строки – game_titles теперь гарантированно не NULL
-                string gameTitles = row["game_titles"].ToString(); // всегда строка благодаря COALESCE
+                string gameTitles = row["game_titles"].ToString(); 
                 string tableNumber = row["table_number"]?.ToString() ?? "—";
                 string organizer = row["organizer_name"]?.ToString() ?? "—";
                 DateTime start = Convert.ToDateTime(row["started_at"]);

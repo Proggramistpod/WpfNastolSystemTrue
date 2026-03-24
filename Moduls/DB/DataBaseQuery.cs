@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Data;
 using WpfNastolSystem.Moduls.CurrentUser;
 
 namespace WpfNastolSystem.Moduls.DB
@@ -211,8 +209,7 @@ namespace WpfNastolSystem.Moduls.DB
                 SELECT 
                     s.*,
                     p.full_name as organizer_name,
-                    t.table_number,
-                    t.zone
+                    t.table_number
                 FROM sessions s
                 LEFT JOIN persons p ON s.organizer_id = p.person_id
                 LEFT JOIN tables t ON s.table_id = t.table_id
@@ -426,6 +423,56 @@ namespace WpfNastolSystem.Moduls.DB
             });
         }
         #endregion
+        public DataTable GetAccountsForGrid()
+        {
+            string query = @"
+                SELECT
+                    a.account_id,
+                    p.full_name AS full_name,
+                    r.name AS role_name,
+                    p.phone AS phone,
+                    a.login AS login
+                FROM accounts a
+                INNER JOIN persons p ON a.person_id = p.person_id
+                INNER JOIN roles r ON p.role_id = r.role_id
+                WHERE p.role_id != 1
+                  AND a.is_active = 1
+                  AND p.is_active = 1
+                ORDER BY p.full_name";
+            return dbManager.Select(query);
+        }
+
+        public DataTable GetAccountById(int id)
+        {
+            string query = "SELECT * FROM accounts WHERE account_id = @id";
+            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
+        }
+
+        public void InsertAccount(Dictionary<string, object> parameters)
+        {
+            string query = @"
+                INSERT INTO accounts 
+                (person_id, login, password, created_at, is_active)
+                VALUES (@person_id, @login, @password, NOW(), 1)";
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public void UpdateAccount(Dictionary<string, object> parameters)
+        {
+            bool updatePassword = parameters.ContainsKey("@password");
+            string query;
+            if (updatePassword)
+            {
+                query = @"UPDATE accounts SET login = @login, password = @password WHERE account_id = @account_id";
+            }
+            else
+            {
+                query = @"UPDATE accounts SET login = @login WHERE account_id = @account_id";
+            }
+            dbManager.NonQuery(query, parameters);
+        }
+
+        // В DataBaseQuery.cs замените следующие методы:
 
         #region СТОЛЫ
         public DataTable GetTablesForGrid()

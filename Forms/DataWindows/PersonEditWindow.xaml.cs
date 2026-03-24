@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
@@ -71,7 +68,7 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateDatePickerHint()
         {
-            
+
         }
 
         private void UpdateAllHints()

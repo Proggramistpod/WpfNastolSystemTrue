@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -371,12 +368,12 @@ namespace WpfNastolSystem.Forms.List
                     break;
 
                 case "cashier":
-                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables"}); // добавлен publishers
+                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables" }); // добавлен publishers
                     LoadTable("sessions");
                     break;
 
                 case "sklad":
-                    HideMenuButtonsExcept(new[] { "game_copies", "publishers" }); 
+                    HideMenuButtonsExcept(new[] { "game_copies", "publishers" });
                     LoadTable("game_copies");
                     break;
 

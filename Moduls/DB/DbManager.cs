@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using MySql.Data.MySqlClient;
 using System.Data;
-using MySql.Data.MySqlClient;
 
 namespace WpfNastolSystem.Moduls.DB
 {
 
     internal class DbManager
     {
-        private readonly string _connectionString = 
+        private readonly string _connectionString =
                 "Server=localhost;" +
                 "Database=nastolclub;" +
                 "Uid=root;" +

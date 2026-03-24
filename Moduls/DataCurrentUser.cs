@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace WpfNastolSystem.Moduls.CurrentUser
+﻿namespace WpfNastolSystem.Moduls.CurrentUser
 {
     internal static class DataCurrentUser
     {

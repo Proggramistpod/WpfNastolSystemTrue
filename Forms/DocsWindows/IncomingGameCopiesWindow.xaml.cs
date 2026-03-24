@@ -81,7 +81,7 @@ namespace WpfNastolSystem.Windows
             {
                 MessageBox.Show("За выбранную дату поступлений нет");
             }
-        }   
+        }
 
         private void BtnPrint_Click(object sender, RoutedEventArgs e)
         {
