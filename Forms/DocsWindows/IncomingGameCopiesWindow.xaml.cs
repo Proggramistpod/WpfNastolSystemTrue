@@ -137,7 +137,7 @@ namespace WpfNastolSystem.Windows
             int colCond = colInv + 120;
             int colLoc = colCond + 120;
 
-            // Заголовки
+            // Заголовки таблицы
             gfx.DrawString("№", fontHeader, XBrushes.Black, colNum, y);
             gfx.DrawString("Игра", fontHeader, XBrushes.Black, colGame, y);
             gfx.DrawString("Инв. номер", fontHeader, XBrushes.Black, colInv, y);
@@ -153,7 +153,6 @@ namespace WpfNastolSystem.Windows
 
             foreach (var item in items)
             {
-                // 👉 перенос на новую страницу если не хватает места
                 if (y > page.Height - 100)
                 {
                     page = doc.AddPage();
@@ -194,8 +193,6 @@ namespace WpfNastolSystem.Windows
 
             return path;
         }
-
-        // =========================
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
             Close();

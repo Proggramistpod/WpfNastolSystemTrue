@@ -17,8 +17,6 @@ namespace WpfNastolSystem.Moduls.CurrentUser
         {
             RoleCode = null;
         }
-
-        // Удобные свойства-проверки
         public static bool IsAdmin => RoleCode == "admin";
         public static bool IsCashier => RoleCode == "cashier";
         public static bool IsGameMaster => RoleCode == "gamemaster";

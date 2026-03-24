@@ -66,7 +66,7 @@
                     <TextBlock Name ="hintD" Text="Описание"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
                                VerticalAlignment="Top"
-                               Margin="0,-11,0,0"
+                               Margin="0,-16,0,0"
                                IsHitTestVisible="False" Height="39">
                         <TextBlock.RenderTransform>
                             <TranslateTransform/>

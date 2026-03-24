@@ -9,6 +9,6 @@ namespace WpfNastolSystem
     /// </summary>
     public partial class App : Application
     {
-    }
 
+    }
 }
