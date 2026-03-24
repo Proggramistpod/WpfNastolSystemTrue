@@ -127,7 +127,6 @@ namespace WpfNastolSystem.Forms.Edit
         {
             try
             {
-                // Используем метод из DataBaseQuery
                 var table = _db.GetGameCopyById(_copyId!.Value);
 
                 if (table.Rows.Count == 0)
@@ -141,7 +140,6 @@ namespace WpfNastolSystem.Forms.Edit
 
                 var row = table.Rows[0];
 
-                // Заполняем данные
                 GameComboBox.SelectedValue = Convert.ToInt32(row["game_id"]);
                 InventoryNumberTextBox.Text = row["inventory_number"]?.ToString() ?? "";
 

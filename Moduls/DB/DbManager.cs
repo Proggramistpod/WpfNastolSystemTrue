@@ -6,13 +6,16 @@ namespace WpfNastolSystem.Moduls.DB
 
     internal class DbManager
     {
-        private readonly string _connectionString =
-                "Server=localhost;" +
-                "Database=nastolclub;" +
-                "Uid=root;" +
-                "Pwd=wasd222t!;" +
-                "CharSet=utf8mb4;";
+        private readonly string _connectionString;
+        public DbManager()
+        {
+            // Загружаем конфигурацию при создании экземпляра
+            var config = DatabaseConfig.Load();
+            if (config == null)
+                throw new InvalidOperationException("Настройки базы данных не найдены. Пожалуйста, выполните настройку подключения.");
 
+            _connectionString = config.GetConnectionString();
+        }
         public DataTable Select(string query, Dictionary<string, object>? parameters = null)
         {
             if (string.IsNullOrWhiteSpace(query))

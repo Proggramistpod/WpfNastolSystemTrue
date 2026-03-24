@@ -27,7 +27,6 @@ namespace WpfNastolSystem.Forms.List
 
             var ctxMenu = new ContextMenu();
 
-            // Приходная накладная — для склада и админа
             if (role is "sklad" or "admin")
             {
                 var miIncoming = new MenuItem
@@ -48,6 +47,20 @@ namespace WpfNastolSystem.Forms.List
                 };
                 miCheck.Click += (_, _) => OpenSessionSelectorForCheck();
                 ctxMenu.Items.Add(miCheck);
+            }
+
+            if (role is "admin")
+            {
+                if (ctxMenu.Items.Count > 0)
+                    ctxMenu.Items.Add(new Separator());
+
+                var miDbConfig = new MenuItem
+                {
+                    Header = "⚙ Настройки подключения к БД",
+                    FontSize = 14
+                };
+                miDbConfig.Click += (_, _) => OpenDatabaseConfig();
+                ctxMenu.Items.Add(miDbConfig);
             }
 
             if (ctxMenu.Items.Count == 0)
@@ -368,7 +381,7 @@ namespace WpfNastolSystem.Forms.List
                     break;
 
                 case "cashier":
-                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables" }); // добавлен publishers
+                    HideMenuButtonsExcept(new[] { "sessions", "persons", "tables" });
                     LoadTable("sessions");
                     break;
 
@@ -378,8 +391,13 @@ namespace WpfNastolSystem.Forms.List
                     break;
 
                 case "gamemaster":
-                    HideMenuButtons(new[] { "accounts", "roles" });
+                    // Оставляем только таблицы, необходимые для работы
+                    HideMenuButtonsExcept(new[] { "sessions", "persons", "games", "game_copies", "tables" });
                     LoadTable("sessions");
+                    // Запрещаем редактирование
+                    AddButton.Visibility = Visibility.Collapsed;
+                    DeleteButton.Visibility = Visibility.Collapsed;
+                    DataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick; // отключаем двойной клик
                     break;
 
                 default:
@@ -501,7 +519,15 @@ namespace WpfNastolSystem.Forms.List
                 "publishers" => "Издатели", // добавлено
                 _ => table
             };
-
+        private void OpenDatabaseConfig()
+        {
+            var setupWindow = new DatabaseSetupWindow();
+            if (setupWindow.ShowDialog() == true)
+            {
+                MessageBox.Show("Настройки сохранены. Для применения изменений перезапустите приложение.",
+                                "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
         private string GetRussianColumnName(string column) =>
             column switch
             {
