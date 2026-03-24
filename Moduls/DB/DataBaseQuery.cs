@@ -153,30 +153,35 @@ namespace WpfNastolSystem.Moduls.DB
             }
 
             string query = @"
-                SELECT COALESCE(r.code, 'visitor') AS role_code
-                FROM accounts a
-                INNER JOIN persons p ON a.person_id = p.person_id
-                LEFT JOIN roles r ON p.role_id = r.role_id
-                WHERE a.login = @login AND p.is_active = 1 AND a.is_active = 1
-                  AND a.password = @password
-                  AND a.is_active = 1
-                  AND p.is_active = 1
-                LIMIT 1";
-            var parameters = new Dictionary<string, object>
-            {
-                { "@login", login.Trim() },
-                { "@password", password }
-            };
-            object? roleCodeObj = dbManager.Scalar(query, parameters);
+        SELECT 
+            p.person_id,
+            COALESCE(r.code, 'visitor') AS role_code
+        FROM accounts a
+        INNER JOIN persons p ON a.person_id = p.person_id
+        LEFT JOIN roles r ON p.role_id = r.role_id
+        WHERE a.login = @login 
+          AND a.password = @password
+          AND a.is_active = 1
+          AND p.is_active = 1
+        LIMIT 1";
 
-            if (roleCodeObj == null)
+            var parameters = new Dictionary<string, object>
+    {
+        { "@login", login.Trim() },
+        { "@password", password }
+    };
+
+            DataTable dt = dbManager.Select(query, parameters);
+            if (dt.Rows.Count == 0)
             {
                 DataCurrentUser.Clear();
                 return null;
             }
 
-            string roleCode = (roleCodeObj as string ?? "visitor").ToLowerInvariant();
-            DataCurrentUser.SetUser(roleCode);
+            int personId = Convert.ToInt32(dt.Rows[0]["person_id"]);
+            string roleCode = (dt.Rows[0]["role_code"] as string ?? "visitor").ToLowerInvariant();
+
+            DataCurrentUser.SetUser(roleCode, personId);
             return login;
         }
         #endregion
@@ -185,22 +190,30 @@ namespace WpfNastolSystem.Moduls.DB
         public DataTable GetSessionsForGrid()
         {
             string query = @"
-            SELECT
-                s.session_id,
-                p.full_name AS organizer_name,
-                t.table_number,
-                s.started_at,
-                s.ended_at,
-                s.cost,
-                IF(s.paid = 1, 'Да', 'Нет') AS paid,
-                s.payment_method,
-                s.notes
-            FROM sessions s
-            LEFT JOIN persons p ON s.organizer_id = p.person_id
-            LEFT JOIN tables t ON s.table_id = t.table_id
-            WHERE s.is_active = 1
-            ORDER BY s.started_at DESC";
-            return dbManager.Select(query);
+        SELECT
+            s.session_id,
+            p.full_name AS organizer_name,
+            t.table_number,
+            s.started_at,
+            s.ended_at,
+            s.cost,
+            IF(s.paid = 1, 'Да', 'Нет') AS paid,
+            s.payment_method,
+            s.notes
+        FROM sessions s
+        LEFT JOIN persons p ON s.organizer_id = p.person_id
+        LEFT JOIN tables t ON s.table_id = t.table_id
+        WHERE s.is_active = 1";
+
+            if (DataCurrentUser.IsGameMaster && DataCurrentUser.PersonId.HasValue)
+            {
+                query += " AND s.organizer_id = @userId";
+                return dbManager.Select(query, new Dictionary<string, object> { { "@userId", DataCurrentUser.PersonId.Value } });
+            }
+            else
+            {
+                return dbManager.Select(query);
+            }
         }
 
         public DataTable GetSessionById(int id)
