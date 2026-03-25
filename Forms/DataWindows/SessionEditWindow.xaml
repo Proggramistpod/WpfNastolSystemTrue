@@ -5,7 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="Редактирование сессии"
-        Height="682"
+        Height="963"
         Width="629"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
@@ -202,7 +202,7 @@
                 </StackPanel>
 
                 <ListView x:Name="lvParticipants"
-                          Height="160"
+                          Height="148"
                           Margin="0,0,0,16">
 
                     <ListView.View>

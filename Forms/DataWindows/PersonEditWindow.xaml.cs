@@ -35,7 +35,7 @@ namespace WpfNastolSystem.Forms.Edit
         private void ConfigureWindow()
         {
             bool editMode = _personId.HasValue;
-            Title = editMode ? "Редактирование пользователя" : "Добавление пользователя";
+            Title = editMode ? "Редактирование посетителя" : "Добавление посетителя";
             TitleText.Text = Title;
 
             if (editMode)
