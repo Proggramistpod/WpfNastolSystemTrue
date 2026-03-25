@@ -5,7 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="Редактирование сессии"
-        Height="787"
+        Height="682"
         Width="629"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
@@ -121,7 +121,7 @@
                           Checked="chkActiveSession_CheckedChanged"
                           Unchecked="chkActiveSession_CheckedChanged"/>
 
-                <!-- Конец сессии -->
+                <!-- Конец сессии (только время) -->
                 <Grid x:Name="gridEndTime"
                       Margin="0,0,0,16"
                       IsEnabled="False">
@@ -129,28 +129,15 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="62"/>
-                        <RowDefinition Height="62"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Text="Дата окончания"
+                    <TextBlock Text="Время окончания"
                                FontSize="14"
                                FontWeight="Medium"
                                Foreground="{StaticResource TextBlueDark}"
                                Margin="0,0,0,8"/>
 
                     <Grid Grid.Row="1">
-                        <Border Style="{StaticResource InputBorderStyle}"/>
-                        <DatePicker x:Name="dpEndDate"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    FontSize="15"
-                                    Padding="16,12,16,0"
-                                    VerticalContentAlignment="Center"
-                                    Margin="0,0,0,10"/>
-                    </Grid>
-
-                    <!-- Время окончания -->
-                    <Grid Grid.Row="2">
                         <Border Style="{StaticResource InputBorderStyle}"/>
 
                         <TextBlock x:Name="HintEndTime"
@@ -177,7 +164,7 @@
                                        VerticalAlignment="Center"/>
 
                             <TextBox x:Name="tbEndMinute"
-                                     Width="26"
+                                     Width="27"
                                      MaxLength="2"
                                      BorderThickness="0"
                                      Background="Transparent"

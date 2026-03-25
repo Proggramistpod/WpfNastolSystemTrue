@@ -92,7 +92,6 @@ namespace WpfNastolSystem.Forms.Edit
             dpStartDate.SelectedDateChanged += (s, e) => UpdateCalculatedCost();
             tbStartHour.TextChanged += (s, e) => UpdateCalculatedCost();
             tbStartMinute.TextChanged += (s, e) => UpdateCalculatedCost();
-            dpEndDate.SelectedDateChanged += (s, e) => UpdateCalculatedCost();
             tbEndHour.TextChanged += (s, e) => UpdateCalculatedCost();
             tbEndMinute.TextChanged += (s, e) => UpdateCalculatedCost();
             chkActiveSession.Checked += (s, e) => UpdateCalculatedCost();
@@ -207,7 +206,6 @@ namespace WpfNastolSystem.Forms.Edit
             if (r["ended_at"] != DBNull.Value)
             {
                 var end = Convert.ToDateTime(r["ended_at"]);
-                dpEndDate.SelectedDate = end.Date;
                 tbEndHour.Text = end.Hour.ToString("00");
                 tbEndMinute.Text = end.Minute.ToString("00");
                 chkActiveSession.IsChecked = false;
@@ -215,6 +213,8 @@ namespace WpfNastolSystem.Forms.Edit
             else
             {
                 chkActiveSession.IsChecked = true;
+                tbEndHour.Text = "";
+                tbEndMinute.Text = "";
             }
 
             chkPaid.IsChecked = Convert.ToBoolean(r["paid"]);
@@ -292,12 +292,15 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateCalculatedCost()
         {
+            // Защита от null
+            if (tbCalculatedCost == null) return;
+
             if (!dpStartDate.SelectedDate.HasValue ||
                 !int.TryParse(tbStartHour.Text, out int sh) ||
                 !int.TryParse(tbStartMinute.Text, out int sm) ||
                 sh < 0 || sh > 23 || sm < 0 || sm > 59)
             {
-                tbCalculatedCost.Text = "—";
+                tbCalculatedCost.Text = "";
                 return;
             }
 
@@ -309,8 +312,7 @@ namespace WpfNastolSystem.Forms.Edit
                 return;
             }
 
-            if (!dpEndDate.SelectedDate.HasValue ||
-                !int.TryParse(tbEndHour.Text, out int eh) ||
+            if (!int.TryParse(tbEndHour.Text, out int eh) ||
                 !int.TryParse(tbEndMinute.Text, out int em) ||
                 eh < 0 || eh > 23 || em < 0 || em > 59)
             {
@@ -318,7 +320,7 @@ namespace WpfNastolSystem.Forms.Edit
                 return;
             }
 
-            DateTime endDt = dpEndDate.SelectedDate.Value.Date.AddHours(eh).AddMinutes(em);
+            DateTime endDt = startDt.Date.AddHours(eh).AddMinutes(em);
 
             if (endDt <= startDt)
             {
@@ -350,6 +352,14 @@ namespace WpfNastolSystem.Forms.Edit
         {
             if (gridEndTime != null)
                 gridEndTime.IsEnabled = chkActiveSession.IsChecked != true;
+
+            // Если сессия активна, очищаем время окончания
+            if (chkActiveSession.IsChecked == true)
+            {
+                //tbEndHour.Text = "";
+               // tbEndMinute.Text = "";
+                UpdateCalculatedCost();
+            }
         }
 
         private void btnAddParticipant_Click(object sender, RoutedEventArgs e)
@@ -486,8 +496,7 @@ namespace WpfNastolSystem.Forms.Edit
 
             if (chkActiveSession.IsChecked != true)
             {
-                if (!dpEndDate.SelectedDate.HasValue ||
-                    !int.TryParse(tbEndHour.Text, out int eh) ||
+                if (!int.TryParse(tbEndHour.Text, out int eh) ||
                     !int.TryParse(tbEndMinute.Text, out int em) ||
                     eh < 0 || eh > 23 || em < 0 || em > 59)
                 {
@@ -496,7 +505,7 @@ namespace WpfNastolSystem.Forms.Edit
                     return false;
                 }
 
-                endDt = dpEndDate.SelectedDate.Value.Date.AddHours(eh).AddMinutes(em);
+                endDt = startDt.Date.AddHours(eh).AddMinutes(em); // дата та же, что и startDt
 
                 if (endDt <= startDt)
                 {
@@ -519,7 +528,6 @@ namespace WpfNastolSystem.Forms.Edit
                 }
             }
 
-            // Определяем способ оплаты только если сессия оплачена
             string paymentMethod = null;
             if (chkPaid.IsChecked == true && cmbPaymentMethod.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag != null)
                 paymentMethod = selectedItem.Tag.ToString();
