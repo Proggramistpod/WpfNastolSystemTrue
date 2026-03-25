@@ -83,17 +83,6 @@ namespace WpfNastolSystem.Moduls.DB
                 throw;
             }
         }
-        public void InTransaction(Action<MySqlConnection, MySqlTransaction> action)
-        {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
-
-            InTransaction<object?>((conn, tx) =>
-            {
-                action(conn, tx);
-                return null;
-            });
-        }
 
         private static void AddParameters(MySqlCommand command, Dictionary<string, object>? parameters)
         {

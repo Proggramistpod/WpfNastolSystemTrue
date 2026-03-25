@@ -391,13 +391,12 @@ namespace WpfNastolSystem.Forms.List
                     break;
 
                 case "gamemaster":
-                    // Оставляем только таблицы, необходимые для работы
                     HideMenuButtonsExcept(new[] { "sessions", "persons", "games", "game_copies", "tables" });
                     LoadTable("sessions");
-                    // Запрещаем редактирование
                     AddButton.Visibility = Visibility.Collapsed;
                     DeleteButton.Visibility = Visibility.Collapsed;
-                    DataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick; // отключаем двойной клик
+                    btnDocuments.Visibility = Visibility.Collapsed;
+                    DataGrid.MouseDoubleClick -= DataGrid_MouseDoubleClick; 
                     break;
 
                 default:
@@ -419,18 +418,6 @@ namespace WpfNastolSystem.Forms.List
             }
         }
 
-        private void HideMenuButtons(string[] tagsToHide)
-        {
-            var toHide = new HashSet<string>(tagsToHide);
-
-            foreach (Button btn in GetMenuButtons())
-            {
-                if (btn.Tag is string tag && toHide.Contains(tag))
-                {
-                    btn.Visibility = Visibility.Collapsed;
-                }
-            }
-        }
 
         private void HideAllMenuButtons()
         {

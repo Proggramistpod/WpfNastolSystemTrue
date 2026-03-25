@@ -48,12 +48,6 @@ namespace WpfNastolSystem.Moduls.DB
             dbManager.NonQuery(query, parameters);
         }
 
-        public void DeletePublisher(int id)
-        {
-            // Мягкое удаление
-            string query = "UPDATE publishers SET is_active = 0 WHERE publisher_id = @id";
-            dbManager.NonQuery(query, new Dictionary<string, object> { { "@id", id } });
-        }
         #endregion
 
         #region ИГРЫ
@@ -228,24 +222,6 @@ namespace WpfNastolSystem.Moduls.DB
                 LEFT JOIN tables t ON s.table_id = t.table_id
                 WHERE s.session_id = @id AND s.is_active = 1";
             return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
-        public DataTable GetActiveSessions()
-        {
-            string query = @"
-                SELECT
-                    s.session_id,
-                    p.full_name AS organizer_name,
-                    t.table_number,
-                    s.started_at,
-                    s.cost,
-                    s.notes
-                FROM sessions s
-                LEFT JOIN persons p ON s.organizer_id = p.person_id
-                LEFT JOIN tables t ON s.table_id = t.table_id
-                WHERE s.ended_at IS NULL AND s.is_active = 1
-                ORDER BY s.started_at DESC";
-            return dbManager.Select(query);
         }
 
         public int InsertSessionAndGetId(Dictionary<string, object> parameters)
@@ -500,33 +476,6 @@ namespace WpfNastolSystem.Moduls.DB
         ORDER BY table_number";
             return dbManager.Select(query);
         }
-
-        public DataTable GetTableById(int id)
-        {
-            string query = @"SELECT table_id, table_number, capacity, is_available, notes FROM tables WHERE table_id = @id";
-            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
-        }
-
-        public void InsertTable(Dictionary<string, object> parameters)
-        {
-            string query = @"
-        INSERT INTO tables 
-        (table_number, capacity, is_available, notes, is_active)
-        VALUES (@table_number, @capacity, @is_available, @notes, 1)";
-            dbManager.NonQuery(query, parameters);
-        }
-
-        public void UpdateTable(Dictionary<string, object> parameters)
-        {
-            string query = @"
-        UPDATE tables SET
-            table_number = @table_number,
-            capacity = @capacity,
-            is_available = @is_available,
-            notes = @notes
-        WHERE table_id = @table_id";
-            dbManager.NonQuery(query, parameters);
-        }
         #endregion
 
         #region РОЛИ
@@ -650,12 +599,15 @@ namespace WpfNastolSystem.Moduls.DB
 
         public DataTable GetGameMasters(bool includeInactive = true)
         {
-            string query = @"
-                SELECT person_id, full_name
-                FROM persons
-                WHERE role_id = 4 AND is_active = 1" +
-                (includeInactive ? "" : " AND is_banned = 0") + @"
-                ORDER BY full_name";
+                    string query = @"
+                SELECT p.person_id, p.full_name
+                FROM persons p
+                INNER JOIN accounts a ON p.person_id = a.person_id
+                INNER JOIN roles r ON p.role_id = r.role_id
+                WHERE r.code = 'GAMEMASTER'
+                  AND p.is_active = 1" +
+                          (includeInactive ? "" : " AND a.is_active = 1") + @"
+                ORDER BY p.full_name";
             return dbManager.Select(query);
         }
 
