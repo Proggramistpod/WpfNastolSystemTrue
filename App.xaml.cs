@@ -9,17 +9,52 @@ namespace WpfNastolSystem
 {
     public partial class App : Application
     {
+        private static bool _isRestarting = false;
+
+        public App()
+        {
+            DispatcherUnhandledException += App_DispatcherUnhandledException;
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+        }
+
+        private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            if (e.Exception is MySqlException)
+            {
+                MessageBox.Show("Ошибка подключения к базе данных. Проверьте настройки.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                ShowSetupWindow();
+            }
+            else
+            {
+                MessageBox.Show($"Произошла ошибка: {e.Exception.Message}\nПриложение будет закрыто.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            e.Handled = true;
+            Shutdown();
+        }
+
+        private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            if (e.ExceptionObject is Exception ex)
+            {
+                MessageBox.Show($"Критическая ошибка: {ex.Message}\nПриложение будет закрыто.", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+
+            if (_isRestarting)
+                return;
+
             if (!CheckAndSetupDatabase())
             {
                 Shutdown();
                 return;
             }
 
-            var mainWindow = new MainWindow();
-            mainWindow.Show();
+            var authWindow = new MainWindow();
+            authWindow.Show();
         }
 
         private bool CheckAndSetupDatabase()
@@ -54,10 +89,11 @@ namespace WpfNastolSystem
         private bool ShowSetupWindow()
         {
             var setupWindow = new DatabaseSetupWindow();
-            if (setupWindow.ShowDialog() == true)
+            bool result = setupWindow.ShowDialog() == true;
+            if (result)
             {
-                RestartApplication();
-                return false;
+                RestartApplication(); 
+                return false;          
             }
             return false;
         }
@@ -80,6 +116,9 @@ namespace WpfNastolSystem
 
         private void RestartApplication()
         {
+            if (_isRestarting) return;
+            _isRestarting = true;
+
             string exePath = Process.GetCurrentProcess().MainModule.FileName;
             Process.Start(exePath);
             Environment.Exit(0);
