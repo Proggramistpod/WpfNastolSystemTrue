@@ -9,7 +9,6 @@ namespace WpfNastolSystem.Style
 
         public byte[] GetFont(string faceName)
         {
-            // Определяем имя файла по запрошенному лицу
             string fontFile = faceName.ToLower() switch
             {
                 "arial" => "arial.ttf",

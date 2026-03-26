@@ -33,7 +33,7 @@ namespace WpfNastolSystem.Moduls.Visual
             datePicker.GotFocus += (s, e) => AnimateUp(hint, transform);
             datePicker.LostFocus += (s, e) => UpdateState(datePicker, hint, transform);
             datePicker.SelectedDateChanged += (s, e) => UpdateState(datePicker, hint, transform);
-            datePicker.Loaded += (s, e) => UpdateState(datePicker, hint, transform); // Для начального состояния
+            datePicker.Loaded += (s, e) => UpdateState(datePicker, hint, transform);
 
             UpdateState(datePicker, hint, transform);
         }
