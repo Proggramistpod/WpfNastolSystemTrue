@@ -3,13 +3,11 @@ using System.Data;
 
 namespace WpfNastolSystem.Moduls.DB
 {
-
     internal class DbManager
     {
         private readonly string _connectionString;
         public DbManager()
         {
-            // Загружаем конфигурацию при создании экземпляра
             var config = DatabaseConfig.Load();
             if (config == null)
                 throw new InvalidOperationException("Настройки базы данных не найдены. Пожалуйста, выполните настройку подключения.");
@@ -63,8 +61,7 @@ namespace WpfNastolSystem.Moduls.DB
 
         public T InTransaction<T>(Func<MySqlConnection, MySqlTransaction, T> action)
         {
-            if (action == null)
-                throw new ArgumentNullException(nameof(action));
+            ArgumentNullException.ThrowIfNull(action);
 
             using var conn = new MySqlConnection(_connectionString);
             conn.Open();

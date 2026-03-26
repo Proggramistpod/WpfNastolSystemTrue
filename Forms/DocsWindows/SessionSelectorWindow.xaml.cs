@@ -200,7 +200,7 @@ namespace WpfNastolSystem.Windows
             // Шапка
             gfx.DrawString("НАСТОЛЬНЫЙ КЛУБ", fontHeader, XBrushes.DarkBlue, new XRect(0, y, page.Width, 20), XStringFormats.TopCenter);
             y += 35;
-            gfx.DrawString($"ЧЕК №{sessionId}", fontBold, XBrushes.Black, new XRect(0, y, page.Width, 20), XStringFormats.TopCenter);
+            gfx.DrawString($"ЧЕК", fontBold, XBrushes.Black, new XRect(0, y, page.Width, 20), XStringFormats.TopCenter);
             y += 30;
 
             gfx.DrawString($"Дата: {DateTime.Now:dd.MM.yyyy HH:mm}", fontNormal, XBrushes.Black, 40, y); y += 20;

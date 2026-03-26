@@ -229,8 +229,7 @@ namespace WpfNastolSystem.Forms.List
             if (_currentData == null) return;
 
             string lowerSearch = search.ToLower();
-
-            // фильтруем строки по видимым колонкам
+            
             var filteredRows = _currentData.AsEnumerable()
                 .Where(row =>
                     _visibleColumns.Any(colName =>
@@ -244,7 +243,6 @@ namespace WpfNastolSystem.Forms.List
 
             if (filteredRows.Any())
             {
-                // создаём новую DataTable только с отфильтрованными строками
                 DataTable filteredTable = filteredRows.CopyToDataTable();
                 DataGrid.ItemsSource = filteredTable.DefaultView;
             }
@@ -473,7 +471,7 @@ namespace WpfNastolSystem.Forms.List
             "tables" => new TableEditWindow(id),
             "accounts" => new AccountEditWindow(id),
             "roles" => new RoleEditWindow(id),
-            "publishers" => new PublisherEditWindow(id), // добавлено
+            "publishers" => new PublisherEditWindow(id),
             _ => null
         };
 
@@ -488,7 +486,7 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => "table_id",
                 "accounts" => "account_id",
                 "roles" => "role_id",
-                "publishers" => "publisher_id", // добавлено
+                "publishers" => "publisher_id", 
                 _ => null
             };
 
@@ -503,7 +501,7 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => "Столы",
                 "accounts" => "Работники",
                 "roles" => "Роли",
-                "publishers" => "Издатели", // добавлено
+                "publishers" => "Издатели", 
                 _ => table
             };
         private void OpenDatabaseConfig()
