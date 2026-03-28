@@ -29,7 +29,7 @@
                 <Grid Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintTitle"
-                               Text="Название игры"
+                               Text="Название игры*"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
                                IsHitTestVisible="False">
                         <TextBlock.RenderTransform>
@@ -73,7 +73,7 @@
                 <Grid Height="62" Margin="0,0,0,16">
                     <Border Style="{StaticResource InputBorderStyle}"/>
                     <TextBlock x:Name="HintYear"
-                               Text="Год выпуска"
+                               Text="Год выпуска*"
                                Style="{StaticResource FloatingHintTextBoxStyle}"
                                IsHitTestVisible="False">
                         <TextBlock.RenderTransform>
@@ -90,7 +90,7 @@
                 </Grid>
 
                 <!-- Издатель (как категория: обычный заголовок + ComboBox) -->
-                <TextBlock Text="Издатель"
+                <TextBlock Text="Издатель*"
                            FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
@@ -101,7 +101,7 @@
                           Margin="0,0,0,16"/>
 
                 <!-- Категория -->
-                <TextBlock Text="Категория"
+                <TextBlock Text="Категория*"
                            FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
@@ -122,7 +122,7 @@
                     <Grid Grid.Column="0" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintMinPlayers"
-                                   Text="Мин. игроков"
+                                   Text="Мин. игроков*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -141,7 +141,7 @@
                     <Grid Grid.Column="2" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintMaxPlayers"
-                                   Text="Макс. игроков"
+                                   Text="Макс. игроков*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -168,7 +168,7 @@
                     <Grid Grid.Column="0" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintPlayTime"
-                                   Text="Время игры (мин)"
+                                   Text="Время игры (мин)*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -186,7 +186,7 @@
                     <Grid Grid.Column="2" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintAgeRating"
-                                   Text="Возраст"
+                                   Text="Возраст*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -215,7 +215,7 @@
                     <Grid Grid.Column="0" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintBggRating"
-                                   Text="Рейтинг BGG (0-10)"
+                                   Text="Рейтинг BGG (0-10)*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -235,7 +235,7 @@
                     <Grid Grid.Column="2" Height="62">
                         <Border Style="{StaticResource InputBorderStyle}"/>
                         <TextBlock x:Name="HintPricePerHour"
-                                   Text="Цена за час (₽)"
+                                   Text="Цена за час (₽)*"
                                    Style="{StaticResource FloatingHintTextBoxStyle}"
                                    IsHitTestVisible="False">
                             <TextBlock.RenderTransform>
@@ -251,6 +251,12 @@
                                  CaretBrush="{StaticResource PrimaryBlue}" Margin="0,0,0,9"/>
                     </Grid>
                 </Grid>
+
+                <!-- Подпись об обязательных полях -->
+                <TextBlock Text="* - обязательные поля для заполнения"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
 
             </StackPanel>
         </ScrollViewer>

@@ -5,7 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         mc:Ignorable="d"
         Title="Редактирование сессии"
-        Height="963"
+        Height="835"
         Width="629"
         WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow"
@@ -57,7 +57,7 @@
                           Margin="0,0,0,16"/>
 
                 <!-- Дата начала -->
-                <TextBlock Text="Дата начала"
+                <TextBlock Text="Дата начала *"
                            FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
@@ -79,7 +79,7 @@
                     <Border Style="{StaticResource InputBorderStyle}"/>
 
                     <TextBlock x:Name="HintStartTime"
-                               Text="Время начала (HH:MM)"
+                               Text="Время начала (HH:MM) *"
                                Style="{StaticResource FloatingHintTextBoxStyle}">
                         <TextBlock.RenderTransform>
                             <TranslateTransform x:Name="StartTimeTransform"/>
@@ -111,13 +111,13 @@
                     </StackPanel>
                 </Grid>
 
-                <!-- Активная сессия -->
+                <!-- Завершённая сессия -->
                 <CheckBox x:Name="chkActiveSession"
-                          Content="Сессия ещё идёт"
+                          Content="Сессия закончена"
                           Margin="0,4,0,16"
                           FontSize="14"
                           Foreground="{StaticResource TextBlueDark}"
-                          IsChecked="True"
+                          IsChecked="False"
                           Checked="chkActiveSession_CheckedChanged"
                           Unchecked="chkActiveSession_CheckedChanged"/>
 
@@ -234,7 +234,7 @@
                 </ListView>
 
                 <!-- Игры -->
-                <TextBlock Text="Игра"
+                <TextBlock Text="Игра *"
                            FontSize="14"
                            FontWeight="Medium"
                            Foreground="{StaticResource TextBlueDark}"
@@ -367,6 +367,12 @@
                              AcceptsReturn="True"/>
 
                 </Grid>
+
+                <!-- Подпись об обязательных полях -->
+                <TextBlock Text="* - обязательные поля"
+                           FontSize="11"
+                           Foreground="#888888"
+                           Margin="0,12,0,0"/>
 
             </StackPanel>
         </ScrollViewer>

@@ -122,10 +122,31 @@ namespace WpfNastolSystem.Forms.Edit
                 ShowError("Ошибка загрузки данных", ex);
             }
         }
+        private bool IsValidFullName(string fullName)
+        {
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                return false;
+            }
+            string[] parts = fullName.Trim().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
+            if (parts.Length != 3)
+            {
+                return false;
+            }
+            var regex = new Regex(@"^[A-Za-zА-Яа-яЁё\-']{2,}$");
+            foreach (string part in parts)
+            {
+                if (!regex.IsMatch(part))
+                    return false;
+            }
+            return true;
+        }
         private bool ValidateFields()
         {
             // ФИО
+            if (!IsValidFullName(FullNameTextBox.Text))
+                return ShowWarning("Введите полное ФИО", FullNameTextBox);
             if (string.IsNullOrWhiteSpace(FullNameTextBox.Text))
                 return ShowWarning("Введите ФИО", FullNameTextBox);
 

@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using PdfSharp.UniversalAccessibility;
+using System.Data;
 using System.Windows;
 using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
@@ -132,10 +133,12 @@ namespace WpfNastolSystem.Forms.Edit
             if (!TryParseInt(TableNumberTextBox.Text, 1, 999, out int tableNumber))
                 return Fail("Некорректный номер стола", TableNumberTextBox);
 
-            if (!TryParseInt(CapacityTextBox.Text, 1, 20, out int capacity))
-                return Fail("Вместимость должна быть от 1 до 20 человек", CapacityTextBox);
+            if (!TryParseInt(CapacityTextBox.Text, 2, 30, out int capacity))
+                return Fail("Вместимость должна быть от 2 до 30 человек", CapacityTextBox);
 
-            // Проверка длины notes (VARCHAR(255))
+            if (!_db.IsTableNumberUnique(tableNumber, _tableId))
+                return Fail("Стол с таким номером уже существует", TableNumberTextBox);
+
             if (!string.IsNullOrWhiteSpace(NotesTextBox.Text) && NotesTextBox.Text.Trim().Length > 255)
                 return Fail("Примечания не могут быть длиннее 255 символов", NotesTextBox);
 

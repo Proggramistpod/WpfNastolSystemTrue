@@ -81,12 +81,20 @@ namespace WpfNastolSystem.Forms.Edit
 
         private bool TryValidate(out Dictionary<string, object> parameters)
         {
-            parameters = new Dictionary<string, object>();
+            parameters = null;
 
             if (string.IsNullOrWhiteSpace(NameTextBox.Text))
                 return Fail("Введите название издателя", NameTextBox);
 
-            parameters["@name"] = NameTextBox.Text.Trim();
+            string name = NameTextBox.Text.Trim();
+
+            if (!_db.IsPublisherNameUnique(name, _publisherId))
+                return Fail("Издатель с таким названием уже существует", NameTextBox);
+
+            parameters = new Dictionary<string, object>
+            {
+                ["@name"] = name
+            };
             return true;
         }
 

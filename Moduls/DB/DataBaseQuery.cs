@@ -599,13 +599,13 @@ namespace WpfNastolSystem.Moduls.DB
 
         public DataTable GetGameMasters(bool includeInactive = true)
         {
-                    string query = @"
+            string query = @"
                 SELECT p.person_id, p.full_name
                 FROM persons p
                 INNER JOIN accounts a ON p.person_id = a.person_id
                 INNER JOIN roles r ON p.role_id = r.role_id
-                WHERE r.code = 'GAMEMASTER'
-                  AND p.is_active = 1" +
+                WHERE r.code = 'gamemaster'
+                  AND p.is_active = 1 AND a.is_active = 1" +
                           (includeInactive ? "" : " AND a.is_active = 1") + @"
                 ORDER BY p.full_name";
             return dbManager.Select(query);
@@ -620,7 +620,24 @@ namespace WpfNastolSystem.Moduls.DB
                 ORDER BY full_name";
             return dbManager.Select(query);
         }
+        public bool IsTableNumberUnique(int tableNumber, int? excludeTableId = null)
+        {
+            string query = @"
+        SELECT COUNT(*) FROM tables 
+        WHERE table_number = @tableNumber 
+          AND is_active = 1" +
+                  (excludeTableId.HasValue ? " AND table_id != @excludeId" : "");
 
+            var parameters = new Dictionary<string, object>
+    {
+        { "@tableNumber", tableNumber }
+    };
+            if (excludeTableId.HasValue)
+                parameters.Add("@excludeId", excludeTableId.Value);
+
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
+        }
         public DataTable GetPersonById(int id)
         {
             string query = @"
@@ -639,5 +656,29 @@ namespace WpfNastolSystem.Moduls.DB
             return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
         }
         #endregion
+        public bool IsPublisherNameUnique(string name, int? excludeId = null)
+        {
+            string query = @"
+        SELECT COUNT(*) FROM publishers 
+        WHERE name = @name AND is_active = 1" +
+                (excludeId.HasValue ? " AND publisher_id != @excludeId" : "");
+            var parameters = new Dictionary<string, object> { { "@name", name } };
+            if (excludeId.HasValue)
+                parameters.Add("@excludeId", excludeId.Value);
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
+        }
+        public bool IsCategoryNameUnique(string name, int? excludeId = null)
+        {
+            string query = @"
+        SELECT COUNT(*) FROM categories 
+        WHERE name = @name" +
+                (excludeId.HasValue ? " AND category_id != @excludeId" : "");
+            var parameters = new Dictionary<string, object> { { "@name", name } };
+            if (excludeId.HasValue)
+                parameters.Add("@excludeId", excludeId.Value);
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
+        }
     }
 }

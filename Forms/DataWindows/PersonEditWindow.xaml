@@ -113,7 +113,7 @@
                                Foreground="#2C3E50" FontSize="13"/>
                 </Grid>
 
-                <TextBlock Text="* - обязательные поля" FontSize="11" Foreground="#888888" Margin="0,12,0,0"/>
+                <TextBlock Text="* - обязательные поля для заполнения" FontSize="11" Foreground="#888888" Margin="0,12,0,0"/>
             </StackPanel>
         </ScrollViewer>
 

@@ -22,9 +22,9 @@ namespace WpfNastolSystem.Windows
                 LoadData(_id.Value);
             }
 
-            // Подключаем floating hint
-            FloatingHintHelper.Attach(tbDescription, hintD, (TranslateTransform)hintName.RenderTransform);
+            // Исправлено: для tbDescription используется hintD, а не hintName
             FloatingHintHelper.Attach(tbName, hintName, (TranslateTransform)hintName.RenderTransform);
+            FloatingHintHelper.Attach(tbDescription, hintD, (TranslateTransform)hintD.RenderTransform);
         }
 
         private void LoadData(int id)
@@ -43,12 +43,22 @@ namespace WpfNastolSystem.Windows
             if (string.IsNullOrWhiteSpace(tbName.Text))
             {
                 MessageBox.Show("Название категории обязательно", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tbName.Focus();
+                return;
+            }
+
+            string name = tbName.Text.Trim();
+
+            if (!db.IsCategoryNameUnique(name, _id))
+            {
+                MessageBox.Show("Категория с таким названием уже существует", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                tbName.Focus();
                 return;
             }
 
             var param = new Dictionary<string, object>
             {
-                { "@name", tbName.Text.Trim() },
+                { "@name", name },
                 { "@description", tbDescription.Text?.Trim() ?? "" }
             };
 

@@ -71,7 +71,7 @@ namespace WpfNastolSystem.Forms.Edit
                 dpStartDate.SelectedDate = DateTime.Today;
                 tbStartHour.Text = DateTime.Now.Hour.ToString("00");
                 tbStartMinute.Text = DateTime.Now.Minute.ToString("00");
-                chkActiveSession.IsChecked = true;
+                chkActiveSession.IsChecked = false;   // новая сессия – ещё идёт
                 UpdateCalculatedCost();
             }
         }
@@ -208,11 +208,11 @@ namespace WpfNastolSystem.Forms.Edit
                 var end = Convert.ToDateTime(r["ended_at"]);
                 tbEndHour.Text = end.Hour.ToString("00");
                 tbEndMinute.Text = end.Minute.ToString("00");
-                chkActiveSession.IsChecked = false;
+                chkActiveSession.IsChecked = true;   // завершена
             }
             else
             {
-                chkActiveSession.IsChecked = true;
+                chkActiveSession.IsChecked = false;  // активна
                 tbEndHour.Text = "";
                 tbEndMinute.Text = "";
             }
@@ -292,7 +292,6 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void UpdateCalculatedCost()
         {
-            // Защита от null
             if (tbCalculatedCost == null) return;
 
             if (!dpStartDate.SelectedDate.HasValue ||
@@ -306,7 +305,7 @@ namespace WpfNastolSystem.Forms.Edit
 
             DateTime startDt = dpStartDate.SelectedDate.Value.Date.AddHours(sh).AddMinutes(sm);
 
-            if (chkActiveSession.IsChecked == true)
+            if (chkActiveSession.IsChecked != true)   // сессия ещё идёт
             {
                 tbCalculatedCost.Text = "";
                 return;
@@ -351,15 +350,15 @@ namespace WpfNastolSystem.Forms.Edit
         private void chkActiveSession_CheckedChanged(object sender, RoutedEventArgs e)
         {
             if (gridEndTime != null)
-                gridEndTime.IsEnabled = chkActiveSession.IsChecked != true;
+                gridEndTime.IsEnabled = chkActiveSession.IsChecked == true;
 
-            // Если сессия активна, очищаем время окончания
-            if (chkActiveSession.IsChecked == true)
+            if (chkActiveSession.IsChecked == false)
             {
-                //tbEndHour.Text = "";
-               // tbEndMinute.Text = "";
-                UpdateCalculatedCost();
+                tbEndHour.Text = "";
+                tbEndMinute.Text = "";
             }
+
+            UpdateCalculatedCost();
         }
 
         private void btnAddParticipant_Click(object sender, RoutedEventArgs e)
@@ -494,7 +493,7 @@ namespace WpfNastolSystem.Forms.Edit
             DateTime startDt = dpStartDate.SelectedDate.Value.Date.AddHours(sh).AddMinutes(sm);
             DateTime? endDt = null;
 
-            if (chkActiveSession.IsChecked != true)
+            if (chkActiveSession.IsChecked == true)
             {
                 if (!int.TryParse(tbEndHour.Text, out int eh) ||
                     !int.TryParse(tbEndMinute.Text, out int em) ||
@@ -505,7 +504,7 @@ namespace WpfNastolSystem.Forms.Edit
                     return false;
                 }
 
-                endDt = startDt.Date.AddHours(eh).AddMinutes(em); // дата та же, что и startDt
+                endDt = startDt.Date.AddHours(eh).AddMinutes(em);
 
                 if (endDt <= startDt)
                 {
@@ -516,7 +515,7 @@ namespace WpfNastolSystem.Forms.Edit
             }
 
             decimal cost = 0m;
-            if (chkActiveSession.IsChecked != true && endDt.HasValue)
+            if (chkActiveSession.IsChecked == true && endDt.HasValue)
             {
                 TimeSpan duration = endDt.Value - startDt;
                 double totalMinutes = duration.TotalMinutes;
