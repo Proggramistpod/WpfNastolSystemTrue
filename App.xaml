@@ -7,6 +7,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/Style/BlueLavishStyle.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style TargetType="Window">
+                <Setter Property="Icon" Value="/images.ico"/>
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

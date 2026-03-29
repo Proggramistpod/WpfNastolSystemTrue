@@ -7,6 +7,14 @@ using WpfNastolSystem.Moduls.Visual;
 
 namespace WpfNastolSystem.Forms.Edit
 {
+    public class GameCopyItem
+    {
+        public int CopyId { get; set; }
+        public string DisplayName { get; set; }
+        public string GameTitle { get; set; }
+        public string InventoryNumber { get; set; }
+        public override string ToString() => DisplayName;
+    }
     public class TableItem
     {
         public int Id { get; set; }
@@ -168,7 +176,7 @@ namespace WpfNastolSystem.Forms.Edit
         private void LoadAvailableGames()
         {
             var dt = _db.GetAvailableGameCopies();
-            var games = dt.AsEnumerable().Select(row => new
+            var games = dt.AsEnumerable().Select(row => new GameCopyItem
             {
                 CopyId = row.Field<int>("copy_id"),
                 DisplayName = row.Field<string>("display_name"),
@@ -177,8 +185,8 @@ namespace WpfNastolSystem.Forms.Edit
             }).ToList();
 
             cmbGame.ItemsSource = games;
-            cmbGame.DisplayMemberPath = "DisplayName";
-            cmbGame.SelectedValuePath = "CopyId";
+            cmbGame.DisplayMemberPath = nameof(GameCopyItem.DisplayName);
+            cmbGame.SelectedValuePath = nameof(GameCopyItem.CopyId);
         }
 
         private void LoadSessionData()
@@ -398,14 +406,13 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void btnSetGame_Click(object sender, RoutedEventArgs e)
         {
-            if (cmbGame.SelectedItem == null)
+            if (cmbGame.SelectedItem is not GameCopyItem selected)
             {
                 MessageBox.Show("Выберите игру из списка!", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            dynamic selected = cmbGame.SelectedItem;
             _selectedCopyId = selected.CopyId;
             _selectedGameTitle = selected.GameTitle;
             _selectedInventoryNumber = selected.InventoryNumber;
