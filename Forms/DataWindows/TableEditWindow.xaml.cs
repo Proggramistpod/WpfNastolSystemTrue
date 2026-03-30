@@ -1,5 +1,4 @@
-﻿using PdfSharp.UniversalAccessibility;
-using System.Data;
+﻿using System.Data;
 using System.Windows;
 using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
@@ -11,15 +10,20 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _tableId;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false;
 
         public TableEditWindow(int? id = null)
         {
             InitializeComponent();
             _tableId = id;
             ConfigureWindow();
+            AttachFloatingHints();
+            AttachChangeHandlers();
+
             if (_tableId.HasValue)
                 LoadTableData();
-            AttachFloatingHints();
+
             TableNumberTextBox.Focus();
         }
 
@@ -37,8 +41,24 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
         }
 
+        private void AttachChangeHandlers()
+        {
+            TableNumberTextBox.TextChanged += OnControlChanged;
+            CapacityTextBox.TextChanged += OnControlChanged;
+            NotesTextBox.TextChanged += OnControlChanged;
+            IsAvailableCheckBox.Checked += OnControlChanged;
+            IsAvailableCheckBox.Unchecked += OnControlChanged;
+        }
+
+        private void OnControlChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
+        }
+
         private void LoadTableData()
         {
+            _isLoading = true;
             try
             {
                 var table = GetTableById(_tableId!.Value);
@@ -58,6 +78,10 @@ namespace WpfNastolSystem.Forms.Edit
             catch (Exception ex)
             {
                 ShowError("Ошибка загрузки данных стола", ex);
+            }
+            finally
+            {
+                _isLoading = false;
             }
         }
 
@@ -183,6 +207,18 @@ namespace WpfNastolSystem.Forms.Edit
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
     }
 }

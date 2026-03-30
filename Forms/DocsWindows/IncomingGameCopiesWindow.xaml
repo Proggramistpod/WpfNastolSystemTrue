@@ -15,15 +15,22 @@
 
         <!-- Верх -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-
             <TextBlock Text="Отчёт по поступлениям"
                        Style="{StaticResource PageTitleStyle}"
                        Margin="0"/>
 
-            <DatePicker x:Name="dpDate"
-                        Width="180"
-                        Margin="20,0,0,0"
-                        Style="{StaticResource ModernDatePickerStyle}"/>
+            <!-- Обёртка для DatePicker с единой стилизацией -->
+            <Grid Width="180" Margin="20,0,0,0">
+                <Border Style="{StaticResource InputBorderStyle}"/>
+                <DatePicker x:Name="dpDate"
+                            Style="{StaticResource ModernDatePickerStyle}"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            Padding="12,8,12,8"
+                            FontSize="14"
+                            VerticalContentAlignment="Center"
+                            HorizontalContentAlignment="Stretch" Margin="10,0,0,0"/>
+            </Grid>
 
             <Button Content="Загрузить"
                     Width="120"
@@ -32,7 +39,7 @@
                     Style="{StaticResource CustomBlueButtonStyle}"/>
         </StackPanel>
 
-        <!-- Таблица -->
+        <!-- Таблица (без изменений) -->
         <DataGrid x:Name="dgItems"
                   Grid.Row="1"
                   AutoGenerateColumns="False"
@@ -47,7 +54,7 @@
             </DataGrid.Columns>
         </DataGrid>
 
-        <!-- Кнопки -->
+        <!-- Кнопки (без изменений) -->
         <StackPanel Grid.Row="2"
                     Orientation="Horizontal"
                     HorizontalAlignment="Right"
@@ -64,6 +71,5 @@
                     Click="BtnCancel_Click"
                     Style="{StaticResource CustomBlueButtonStyle}"/>
         </StackPanel>
-
     </Grid>
 </Window>

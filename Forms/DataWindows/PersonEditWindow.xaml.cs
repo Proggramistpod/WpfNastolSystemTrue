@@ -142,6 +142,37 @@ namespace WpfNastolSystem.Forms.Edit
             }
             return true;
         }
+        private void PhoneTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            PhoneTextBox.TextChanged -= PhoneTextBox_TextChanged;
+
+            string raw = new string(PhoneTextBox.Text.Where(char.IsDigit).ToArray());
+            if (raw.Length > 0 && (raw[0] == '8' || raw[0] == '7'))
+            {
+                raw = "7" + raw.Substring(1);
+            }
+            if (raw.Length > 11)
+                raw = raw.Substring(0, 11);
+            string formatted = "";
+            if (raw.Length > 0)
+            {
+                formatted = "+7";
+                if (raw.Length >= 2)
+                {
+                    formatted += $" ({raw.Substring(1, Math.Min(3, raw.Length - 1))}";
+                    if (raw.Length >= 5)
+                        formatted += $") {raw.Substring(4, Math.Min(3, raw.Length - 4))}";
+                    if (raw.Length >= 8)
+                        formatted += $"-{raw.Substring(7, Math.Min(2, raw.Length - 7))}";
+                    if (raw.Length >= 10)
+                        formatted += $"-{raw.Substring(9, Math.Min(2, raw.Length - 9))}";
+                }
+            }
+
+            PhoneTextBox.Text = formatted;
+            PhoneTextBox.CaretIndex = PhoneTextBox.Text.Length;
+            PhoneTextBox.TextChanged += PhoneTextBox_TextChanged;
+        }
         private bool ValidateFields()
         {
             // ФИО
@@ -154,8 +185,8 @@ namespace WpfNastolSystem.Forms.Edit
             if (string.IsNullOrWhiteSpace(PhoneTextBox.Text))
                 return ShowWarning("Введите номер телефона", PhoneTextBox);
             string cleanPhone = new string(PhoneTextBox.Text.Where(char.IsDigit).ToArray());
-            if (cleanPhone.Length < 10 || !cleanPhone.All(char.IsDigit))
-                return ShowWarning("Некорректный номер телефона", PhoneTextBox);
+            if (cleanPhone.Length != 11 || cleanPhone[0] != '7')
+                return ShowWarning("Некорректный номер телефона. Номер должен начинаться с +7 или 8 и содержать 10 цифр после кода.", PhoneTextBox);
 
             // Email
             if (string.IsNullOrWhiteSpace(EmailTextBox.Text))
@@ -243,14 +274,6 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_isDataChanged)
-            {
-                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
-                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
-                if (result != MessageBoxResult.Yes)
-                    return;
-            }
-            DialogResult = false;
             Close();
         }
 

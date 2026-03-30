@@ -6,7 +6,55 @@ namespace WpfNastolSystem.Moduls.DB
     class DataBaseQuery
     {
         private readonly DbManager dbManager = new DbManager();
+        #region РОЛИ
+        public DataTable GetRolesForGrid()
+        {
+            string query = "SELECT role_id, code, name, description FROM roles WHERE is_active = 1 ORDER BY name";
+            return dbManager.Select(query);
+        }
 
+        public DataTable GetRoleById(int id)
+        {
+            string query = "SELECT role_id, code, name, description FROM roles WHERE role_id = @id AND is_active = 1";
+            return dbManager.Select(query, new Dictionary<string, object> { { "@id", id } });
+        }
+
+        public void InsertRole(Dictionary<string, object> parameters)
+        {
+            string query = @"INSERT INTO roles (code, name, description) 
+                     VALUES (@code, @name, @description)";
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public void UpdateRole(Dictionary<string, object> parameters)
+        {
+            string query = @"UPDATE roles SET code = @code, name = @name, description = @description
+                     WHERE role_id = @role_id";
+            dbManager.NonQuery(query, parameters);
+        }
+
+        public bool IsRoleCodeUnique(string code, int? excludeRoleId = null)
+        {
+            string query = "SELECT COUNT(*) FROM roles WHERE code = @code AND is_active = 1" +
+                           (excludeRoleId.HasValue ? " AND role_id != @excludeId" : "");
+            var parameters = new Dictionary<string, object> { { "@code", code } };
+            if (excludeRoleId.HasValue)
+                parameters.Add("@excludeId", excludeRoleId.Value);
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
+        }
+
+        public bool IsRoleNameUnique(string name, int? excludeRoleId = null)
+        {
+            string query = "SELECT COUNT(*) FROM roles WHERE name = @name AND is_active = 1" +
+                           (excludeRoleId.HasValue ? " AND role_id != @excludeId" : "");
+            var parameters = new Dictionary<string, object> { { "@name", name } };
+            if (excludeRoleId.HasValue)
+                parameters.Add("@excludeId", excludeRoleId.Value);
+            object result = dbManager.Scalar(query, parameters);
+            return Convert.ToInt32(result) == 0;
+        }
+        #endregion
         public DataTable GetSessionParticipants(int sessionId)
         {
             string query = @"
@@ -474,14 +522,6 @@ namespace WpfNastolSystem.Moduls.DB
         FROM tables
         WHERE is_active = 1
         ORDER BY table_number";
-            return dbManager.Select(query);
-        }
-        #endregion
-
-        #region РОЛИ
-        public DataTable GetRolesForGrid()
-        {
-            string query = "SELECT role_id, code, name, description FROM roles WHERE is_active = 1 ORDER BY name";
             return dbManager.Select(query);
         }
         #endregion

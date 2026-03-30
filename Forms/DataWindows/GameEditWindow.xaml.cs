@@ -11,6 +11,8 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _gameId;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false;
 
         // Вложенный класс для элементов ComboBox категорий
         public class CategoryItem
@@ -37,10 +39,12 @@ namespace WpfNastolSystem.Forms.Edit
             LoadCategories();
             LoadPublishers();      // загрузка издателей
 
+            AttachFloatingHints();
+            AttachChangeHandlers(); // подписка на изменения
+
             if (_gameId.HasValue)
                 LoadGameData();
 
-            AttachFloatingHints();
             TitleTextBox.Focus();
         }
 
@@ -58,13 +62,37 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(TitleTextBox, HintTitle, TitleTransform);
             FloatingHintHelper.Attach(DescriptionTextBox, HintDescription, DescriptionTransform);
             FloatingHintHelper.Attach(YearTextBox, HintYear, YearTransform);
-            // PublisherTextBox отсутствует – ничего не прикрепляем
             FloatingHintHelper.Attach(MinPlayersTextBox, HintMinPlayers, MinPlayersTransform);
             FloatingHintHelper.Attach(MaxPlayersTextBox, HintMaxPlayers, MaxPlayersTransform);
             FloatingHintHelper.Attach(PlayTimeTextBox, HintPlayTime, PlayTimeTransform);
             FloatingHintHelper.Attach(AgeRatingTextBox, HintAgeRating, AgeRatingTransform);
             FloatingHintHelper.Attach(BggRatingTextBox, HintBggRating, BggRatingTransform);
             FloatingHintHelper.Attach(PricePerHourTextBox, HintPricePerHour, PricePerHourTransform);
+        }
+
+        // Подписка на изменения
+        private void AttachChangeHandlers()
+        {
+            // TextBox'ы
+            TitleTextBox.TextChanged += OnControlChanged;
+            DescriptionTextBox.TextChanged += OnControlChanged;
+            YearTextBox.TextChanged += OnControlChanged;
+            MinPlayersTextBox.TextChanged += OnControlChanged;
+            MaxPlayersTextBox.TextChanged += OnControlChanged;
+            PlayTimeTextBox.TextChanged += OnControlChanged;
+            AgeRatingTextBox.TextChanged += OnControlChanged;
+            BggRatingTextBox.TextChanged += OnControlChanged;
+            PricePerHourTextBox.TextChanged += OnControlChanged;
+
+            // ComboBox'ы
+            CategoryComboBox.SelectionChanged += OnControlChanged;
+            PublisherComboBox.SelectionChanged += OnControlChanged;
+        }
+
+        private void OnControlChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
         }
 
         #endregion
@@ -141,6 +169,7 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void LoadGameData()
         {
+            _isLoading = true;
             try
             {
                 var table = _db.GetGameById(_gameId!.Value);
@@ -171,6 +200,10 @@ namespace WpfNastolSystem.Forms.Edit
             catch (Exception ex)
             {
                 ShowError("Ошибка загрузки данных игры", ex);
+            }
+            finally
+            {
+                _isLoading = false;
             }
         }
 
@@ -312,6 +345,18 @@ namespace WpfNastolSystem.Forms.Edit
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
 
         #endregion

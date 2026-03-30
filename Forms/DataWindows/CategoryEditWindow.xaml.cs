@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
@@ -9,6 +10,9 @@ namespace WpfNastolSystem.Windows
     {
         private readonly DataBaseQuery db = new();
         private readonly int? _id;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false; // флаг загрузки данных
+
         public string WindowTitle => _id.HasValue ? "Редактировать категорию" : "Новая категория";
 
         public CategoryEditWindow(int? id = null)
@@ -16,25 +20,42 @@ namespace WpfNastolSystem.Windows
             _id = id;
             InitializeComponent();
             DataContext = this;
+            tbName.TextChanged += TextBox_TextChanged;
+            tbDescription.TextChanged += TextBox_TextChanged;
 
             if (_id.HasValue)
             {
                 LoadData(_id.Value);
             }
 
-            // Исправлено: для tbDescription используется hintD, а не hintName
             FloatingHintHelper.Attach(tbName, hintName, (TranslateTransform)hintName.RenderTransform);
             FloatingHintHelper.Attach(tbDescription, hintD, (TranslateTransform)hintD.RenderTransform);
         }
 
         private void LoadData(int id)
         {
-            var dt = db.GetAllCategories(); // или отдельный метод GetCategoryById
-            var row = dt.Select($"category_id = {id}").FirstOrDefault();
-            if (row != null)
+            _isLoading = true; 
+            try
             {
-                tbName.Text = row["name"].ToString();
-                tbDescription.Text = row["description"]?.ToString() ?? "";
+                var dt = db.GetAllCategories(); 
+                var row = dt.Select($"category_id = {id}").FirstOrDefault();
+                if (row != null)
+                {
+                    tbName.Text = row["name"].ToString();
+                    tbDescription.Text = row["description"]?.ToString() ?? "";
+                }
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (!_isLoading)
+            {
+                _isDataChanged = true;
             }
         }
 
@@ -76,6 +97,17 @@ namespace WpfNastolSystem.Windows
             Close();
         }
 
-        private void BtnCancel_Click(object sender, RoutedEventArgs e) => Close();
+        private void BtnCancel_Click(object sender, RoutedEventArgs e)
+        {
+            if (_isDataChanged)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    return;
+            }
+            DialogResult = false;
+            Close();
+        }
     }
 }

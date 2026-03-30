@@ -42,6 +42,8 @@ namespace WpfNastolSystem.Forms.Edit
         private readonly DataBaseQuery _db = new();
         private readonly int? _sessionId;
         private readonly int _currentUserPersonId;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false;
 
         private ObservableCollection<ParticipantViewModel> _participants = new();
 
@@ -69,6 +71,7 @@ namespace WpfNastolSystem.Forms.Edit
             LoadAvailableGames();
             AttachFloatingHints();
             AttachCostCalculationEvents();
+            AttachChangeHandlers(); // подписка на изменения
 
             if (_sessionId.HasValue)
             {
@@ -104,6 +107,30 @@ namespace WpfNastolSystem.Forms.Edit
             tbEndMinute.TextChanged += (s, e) => UpdateCalculatedCost();
             chkActiveSession.Checked += (s, e) => UpdateCalculatedCost();
             chkActiveSession.Unchecked += (s, e) => UpdateCalculatedCost();
+        }
+
+        private void AttachChangeHandlers()
+        {
+            // Основные поля
+            cmbOrganizer.SelectionChanged += OnControlChanged;
+            cmbTable.SelectionChanged += OnControlChanged;
+            dpStartDate.SelectedDateChanged += OnControlChanged;
+            tbStartHour.TextChanged += OnControlChanged;
+            tbStartMinute.TextChanged += OnControlChanged;
+            tbEndHour.TextChanged += OnControlChanged;
+            tbEndMinute.TextChanged += OnControlChanged;
+            chkActiveSession.Checked += OnControlChanged;
+            chkActiveSession.Unchecked += OnControlChanged;
+            chkPaid.Checked += OnControlChanged;
+            chkPaid.Unchecked += OnControlChanged;
+            cmbPaymentMethod.SelectionChanged += OnControlChanged;
+            tbNotes.TextChanged += OnControlChanged;
+        }
+
+        private void OnControlChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
         }
 
         #endregion
@@ -191,60 +218,68 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void LoadSessionData()
         {
-            var dt = _db.GetSessionById(_sessionId.Value);
-            if (dt == null || dt.Rows.Count == 0)
+            _isLoading = true;
+            try
             {
-                Close();
-                return;
-            }
-
-            var r = dt.Rows[0];
-
-            if (r["organizer_id"] != DBNull.Value)
-                cmbOrganizer.SelectedValue = Convert.ToInt32(r["organizer_id"]);
-
-            if (r["table_id"] != DBNull.Value)
-                cmbTable.SelectedValue = Convert.ToInt32(r["table_id"]);
-
-            var start = Convert.ToDateTime(r["started_at"]);
-            dpStartDate.SelectedDate = start.Date;
-            tbStartHour.Text = start.Hour.ToString("00");
-            tbStartMinute.Text = start.Minute.ToString("00");
-
-            if (r["ended_at"] != DBNull.Value)
-            {
-                var end = Convert.ToDateTime(r["ended_at"]);
-                tbEndHour.Text = end.Hour.ToString("00");
-                tbEndMinute.Text = end.Minute.ToString("00");
-                chkActiveSession.IsChecked = true;   // завершена
-            }
-            else
-            {
-                chkActiveSession.IsChecked = false;  // активна
-                tbEndHour.Text = "";
-                tbEndMinute.Text = "";
-            }
-
-            chkPaid.IsChecked = Convert.ToBoolean(r["paid"]);
-
-            // Загрузка способа оплаты
-            if (r["payment_method"] != DBNull.Value)
-            {
-                string method = r["payment_method"].ToString();
-                foreach (ComboBoxItem item in cmbPaymentMethod.Items)
+                var dt = _db.GetSessionById(_sessionId.Value);
+                if (dt == null || dt.Rows.Count == 0)
                 {
-                    if (item.Tag?.ToString() == method)
+                    Close();
+                    return;
+                }
+
+                var r = dt.Rows[0];
+
+                if (r["organizer_id"] != DBNull.Value)
+                    cmbOrganizer.SelectedValue = Convert.ToInt32(r["organizer_id"]);
+
+                if (r["table_id"] != DBNull.Value)
+                    cmbTable.SelectedValue = Convert.ToInt32(r["table_id"]);
+
+                var start = Convert.ToDateTime(r["started_at"]);
+                dpStartDate.SelectedDate = start.Date;
+                tbStartHour.Text = start.Hour.ToString("00");
+                tbStartMinute.Text = start.Minute.ToString("00");
+
+                if (r["ended_at"] != DBNull.Value)
+                {
+                    var end = Convert.ToDateTime(r["ended_at"]);
+                    tbEndHour.Text = end.Hour.ToString("00");
+                    tbEndMinute.Text = end.Minute.ToString("00");
+                    chkActiveSession.IsChecked = true;   // завершена
+                }
+                else
+                {
+                    chkActiveSession.IsChecked = false;  // активна
+                    tbEndHour.Text = "";
+                    tbEndMinute.Text = "";
+                }
+
+                chkPaid.IsChecked = Convert.ToBoolean(r["paid"]);
+
+                // Загрузка способа оплаты
+                if (r["payment_method"] != DBNull.Value)
+                {
+                    string method = r["payment_method"].ToString();
+                    foreach (ComboBoxItem item in cmbPaymentMethod.Items)
                     {
-                        cmbPaymentMethod.SelectedItem = item;
-                        break;
+                        if (item.Tag?.ToString() == method)
+                        {
+                            cmbPaymentMethod.SelectedItem = item;
+                            break;
+                        }
                     }
                 }
+
+                tbNotes.Text = r["notes"]?.ToString() ?? "";
+
+                LoadParticipants();
+                LoadSessionGame();
             }
-
-            tbNotes.Text = r["notes"]?.ToString() ?? "";
-
-            LoadParticipants();
-            LoadSessionGame();
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         private void LoadParticipants()
@@ -367,6 +402,7 @@ namespace WpfNastolSystem.Forms.Edit
             }
 
             UpdateCalculatedCost();
+            OnDataChanged(); // изменение чекбокса – это изменение данных
         }
 
         private void btnAddParticipant_Click(object sender, RoutedEventArgs e)
@@ -396,12 +432,16 @@ namespace WpfNastolSystem.Forms.Edit
             });
 
             cmbAddParticipant.SelectedIndex = -1;
+            OnDataChanged(); // изменение списка участников
         }
 
         private void btnRemoveParticipant_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.DataContext is ParticipantViewModel vm)
+            {
                 _participants.Remove(vm);
+                OnDataChanged(); // изменение списка участников
+            }
         }
 
         private void btnSetGame_Click(object sender, RoutedEventArgs e)
@@ -420,18 +460,25 @@ namespace WpfNastolSystem.Forms.Edit
             tbSelectedGame.Text = _selectedGameTitle;
             tbGameInventory.Text = $"Инв. №: {_selectedInventoryNumber}";
             borderSelectedGame.Background = System.Windows.Media.Brushes.LightGreen;
+            OnDataChanged(); // изменение выбранной игры
         }
 
         private void btnClearGame_Click(object sender, RoutedEventArgs e)
         {
             ClearSelectedGame();
+            OnDataChanged(); // изменение выбранной игры
+        }
+
+        private void OnDataChanged()
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
         }
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
             if (!ValidateAndCollectData(out var parameters, out var participantIds))
                 return;
-
 
             try
             {
@@ -568,6 +615,18 @@ namespace WpfNastolSystem.Forms.Edit
         {
             DialogResult = false;
             Close();
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
 
         #endregion

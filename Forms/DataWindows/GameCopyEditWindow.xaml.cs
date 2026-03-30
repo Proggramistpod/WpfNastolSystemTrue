@@ -11,6 +11,8 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _copyId;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false; // Флаг загрузки
 
         public class GameItem
         {
@@ -38,9 +40,10 @@ namespace WpfNastolSystem.Forms.Edit
             ConfigureWindow();
             InitializeConditionComboBox();
             LoadGames();
+            AttachFloatingHints();
+            AttachChangeHandlers(); // Подписываем изменения
             if (_copyId.HasValue)
                 LoadCopyData();
-            AttachFloatingHints();
             GameComboBox.Focus();
         }
 
@@ -65,7 +68,7 @@ namespace WpfNastolSystem.Forms.Edit
                 ConditionComboBox.Items.Add(item);
             }
 
-            ConditionComboBox.SelectedIndex = 0; 
+            ConditionComboBox.SelectedIndex = 0;
         }
 
         private string GetEnumDescription(Enum value)
@@ -82,6 +85,31 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(InventoryNumberTextBox, HintInventoryNumber, InventoryNumberTransform);
             FloatingHintHelper.Attach(LocationTextBox, HintLocation, LocationTransform);
             FloatingHintHelper.Attach(NotesTextBox, HintNotes, NotesTransform);
+        }
+
+        // Подписка на изменения
+        private void AttachChangeHandlers()
+        {
+            // TextBox'ы (кроме InventoryNumber и Location, они уже имеют обработчики в XAML)
+            NotesTextBox.TextChanged += OnControlChanged;
+
+            // ComboBox'ы
+            GameComboBox.SelectionChanged += OnControlChanged;
+            ConditionComboBox.SelectionChanged += OnControlChanged;
+
+            // DatePicker
+            AcquiredDatePicker.SelectedDateChanged += OnControlChanged;
+
+            // CheckBox
+            IsAvailableCheckBox.Checked += OnControlChanged;
+            IsAvailableCheckBox.Unchecked += OnControlChanged;
+        }
+
+        // Общий обработчик
+        private void OnControlChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
         }
 
         private void LoadGames()
@@ -125,6 +153,7 @@ namespace WpfNastolSystem.Forms.Edit
 
         private void LoadCopyData()
         {
+            _isLoading = true;
             try
             {
                 var table = _db.GetGameCopyById(_copyId!.Value);
@@ -142,40 +171,27 @@ namespace WpfNastolSystem.Forms.Edit
 
                 GameComboBox.SelectedValue = Convert.ToInt32(row["game_id"]);
                 InventoryNumberTextBox.Text = row["inventory_number"]?.ToString() ?? "";
-
-                if (row["acquired_date"] != DBNull.Value &&
-                    DateTime.TryParse(row["acquired_date"].ToString(), out DateTime date))
-                {
-                    AcquiredDatePicker.SelectedDate = date;
-                }
-
+                AcquiredDatePicker.SelectedDate = row["acquired_date"] != DBNull.Value && DateTime.TryParse(row["acquired_date"].ToString(), out var date) ? date : null;
                 LocationTextBox.Text = row["location"]?.ToString() ?? "";
+                IsAvailableCheckBox.IsChecked = row["is_available"] != DBNull.Value && Convert.ToInt32(row["is_available"]) == 1;
 
-                IsAvailableCheckBox.IsChecked = row["is_available"] != DBNull.Value &&
-                                               Convert.ToInt32(row["is_available"]) == 1;
-
-                if (row["conditions"] != DBNull.Value)
+                if (row["conditions"] != DBNull.Value && Enum.TryParse<GameCondition>(row["conditions"].ToString(), true, out var condition))
                 {
-                    string conditionValue = row["conditions"].ToString() ?? "good";
-
-                    if (Enum.TryParse<GameCondition>(conditionValue, true, out GameCondition condition))
+                    foreach (ComboBoxItem item in ConditionComboBox.Items)
                     {
-                        foreach (ComboBoxItem item in ConditionComboBox.Items)
+                        if (item.Tag is GameCondition cond && cond == condition)
                         {
-                            if (item.Tag is GameCondition cond && cond == condition)
-                            {
-                                ConditionComboBox.SelectedItem = item;
-                                break;
-                            }
+                            ConditionComboBox.SelectedItem = item;
+                            break;
                         }
                     }
                 }
 
                 NotesTextBox.Text = row["notes"]?.ToString() ?? "";
             }
-            catch (Exception ex)
+            finally
             {
-                ShowError("Ошибка загрузки данных копии", ex);
+                _isLoading = false;
             }
         }
 
@@ -207,15 +223,8 @@ namespace WpfNastolSystem.Forms.Edit
             }
         }
 
-        private void InsertGameCopy(Dictionary<string, object> parameters)
-        {
-            _db.InsertGameCopy(parameters);
-        }
-
-        private void UpdateGameCopy(Dictionary<string, object> parameters)
-        {
-            _db.UpdateGameCopy(parameters);
-        }
+        private void InsertGameCopy(Dictionary<string, object> parameters) => _db.InsertGameCopy(parameters);
+        private void UpdateGameCopy(Dictionary<string, object> parameters) => _db.UpdateGameCopy(parameters);
 
         private bool TryValidate(out Dictionary<string, object> parameters)
         {
@@ -223,7 +232,8 @@ namespace WpfNastolSystem.Forms.Edit
 
             if (GameComboBox.SelectedValue == null)
                 return Fail("Выберите игру", GameComboBox);
-
+            if (AcquiredDatePicker.SelectedDate > DateTime.Today)
+                return Fail("Дата не может бывть в будущему", AcquiredDatePicker);
             if (string.IsNullOrWhiteSpace(InventoryNumberTextBox.Text))
                 return Fail("Введите инвентарный номер", InventoryNumberTextBox);
 
@@ -232,35 +242,26 @@ namespace WpfNastolSystem.Forms.Edit
             if (inventoryNumber.Length > 50)
                 return Fail("Инвентарный номер не может быть длиннее 50 символов", InventoryNumberTextBox);
 
-            // Проверка уникальности инвентарного номера (используем метод из DataBaseQuery)
             if (!_db.IsInventoryNumberUnique(inventoryNumber, _copyId))
                 return Fail("Инвентарный номер уже существует", InventoryNumberTextBox);
 
-            // Получение выбранного состояния
             GameCondition selectedCondition = GameCondition.good;
             if (ConditionComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is GameCondition condition)
-            {
                 selectedCondition = condition;
-            }
 
-            // Проверка длины location
             string? location = string.IsNullOrWhiteSpace(LocationTextBox.Text) ? null : LocationTextBox.Text.Trim();
             if (location?.Length > 100)
                 return Fail("Расположение не может быть длиннее 100 символов", LocationTextBox);
 
-            // Формирование параметров
             parameters = new Dictionary<string, object>
             {
                 ["@game_id"] = GameComboBox.SelectedValue,
                 ["@inventory_number"] = inventoryNumber,
-                ["@acquired_date"] = AcquiredDatePicker.SelectedDate.HasValue
-                    ? (object)AcquiredDatePicker.SelectedDate.Value.ToString("yyyy-MM-dd")
-                    : DBNull.Value,
+                ["@acquired_date"] = AcquiredDatePicker.SelectedDate.HasValue ? AcquiredDatePicker.SelectedDate.Value.ToString("yyyy-MM-dd") : DBNull.Value,
                 ["@location"] = location ?? (object)DBNull.Value,
                 ["@is_available"] = (IsAvailableCheckBox.IsChecked ?? true) ? 1 : 0,
-                ["@condition"] = selectedCondition.ToString(), // Сохраняем как 'good', 'fair' или 'bad'
-                ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text)
-                    ? DBNull.Value : NotesTextBox.Text.Trim()
+                ["@condition"] = selectedCondition.ToString(),
+                ["@notes"] = string.IsNullOrWhiteSpace(NotesTextBox.Text) ? DBNull.Value : NotesTextBox.Text.Trim()
             };
 
             return true;
@@ -269,7 +270,6 @@ namespace WpfNastolSystem.Forms.Edit
         private bool Fail(string message, UIElement element)
         {
             MessageBox.Show(message, "Ошибка ввода", MessageBoxButton.OK, MessageBoxImage.Warning);
-            element.Focus();
             return false;
         }
 
@@ -279,18 +279,10 @@ namespace WpfNastolSystem.Forms.Edit
             Close();
         }
 
-        private void ShowError(string title, Exception ex)
-        {
-            MessageBox.Show($"{title}\n{ex.Message}", "Ошибка",
-                MessageBoxButton.OK, MessageBoxImage.Error);
-        }
+        private void ShowError(string title, Exception ex) => MessageBox.Show($"{title}\n{ex.Message}", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+        private void ShowInfo(string message) => MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-        private void ShowInfo(string message)
-        {
-            MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        // Обработчики для ограничения длины ввода
+        // Обработчики ограничения длины
         private void InventoryNumberTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (InventoryNumberTextBox.Text.Length > 50)
@@ -298,6 +290,7 @@ namespace WpfNastolSystem.Forms.Edit
                 InventoryNumberTextBox.Text = InventoryNumberTextBox.Text.Substring(0, 50);
                 InventoryNumberTextBox.CaretIndex = InventoryNumberTextBox.Text.Length;
             }
+            if (!_isLoading) _isDataChanged = true;
         }
 
         private void LocationTextBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -307,6 +300,19 @@ namespace WpfNastolSystem.Forms.Edit
                 LocationTextBox.Text = LocationTextBox.Text.Substring(0, 100);
                 LocationTextBox.CaretIndex = LocationTextBox.Text.Length;
             }
+            if (!_isLoading) _isDataChanged = true;
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
     }
 }

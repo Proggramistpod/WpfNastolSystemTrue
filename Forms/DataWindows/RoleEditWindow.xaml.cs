@@ -1,5 +1,5 @@
-﻿using System.Data;
-using System.Windows;
+﻿using System.Windows;
+using System.Windows.Controls;
 using WpfNastolSystem.Moduls.DB;
 using WpfNastolSystem.Moduls.Visual;
 
@@ -9,15 +9,21 @@ namespace WpfNastolSystem.Forms.Edit
     {
         private readonly DataBaseQuery _db = new();
         private readonly int? _roleId;
+        private bool _isDataChanged = false;
+        private bool _isLoading = false;
 
         public RoleEditWindow(int? id = null)
         {
             InitializeComponent();
+
             _roleId = id;
             ConfigureWindow();
+            AttachFloatingHints();
+            AttachChangeHandlers();
+
             if (_roleId.HasValue)
                 LoadRoleData();
-            AttachFloatingHints();
+
             CodeTextBox.Focus();
         }
 
@@ -35,12 +41,32 @@ namespace WpfNastolSystem.Forms.Edit
             FloatingHintHelper.Attach(DescriptionTextBox, HintDescription, DescriptionTransform);
         }
 
+        private void AttachChangeHandlers()
+        {
+            CodeTextBox.TextChanged += OnControlChanged;
+            NameTextBox.TextChanged += OnControlChanged;
+            DescriptionTextBox.TextChanged += OnControlChanged;
+        }
+
+        private void OnControlChanged(object sender, EventArgs e)
+        {
+            if (!_isLoading)
+                _isDataChanged = true;
+        }
+
         private void LoadRoleData()
         {
+            _isLoading = true;
             try
             {
-                var table = GetRoleById(_roleId!.Value);
-                if (table.Rows.Count == 0) return;
+                var table = _db.GetRoleById(_roleId!.Value);
+                if (table.Rows.Count == 0)
+                {
+                    MessageBox.Show("Роль не найдена", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    DialogResult = false;
+                    Close();
+                    return;
+                }
 
                 var row = table.Rows[0];
                 CodeTextBox.Text = row["code"]?.ToString() ?? "";
@@ -51,12 +77,10 @@ namespace WpfNastolSystem.Forms.Edit
             {
                 ShowError("Ошибка загрузки данных роли", ex);
             }
-        }
-
-        private DataTable GetRoleById(int id)
-        {
-            string query = @"SELECT * FROM roles WHERE role_id = @id";
-            return new DbManager().Select(query, new Dictionary<string, object> { { "@id", id } });
+            finally
+            {
+                _isLoading = false;
+            }
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -69,12 +93,12 @@ namespace WpfNastolSystem.Forms.Edit
                 if (_roleId.HasValue)
                 {
                     roleData["@role_id"] = _roleId.Value;
-                    UpdateRole(roleData);
+                    _db.UpdateRole(roleData);
                     ShowInfo("Роль успешно обновлена");
                 }
                 else
                 {
-                    InsertRole(roleData);
+                    _db.InsertRole(roleData);
                     ShowInfo("Роль успешно добавлена");
                 }
 
@@ -87,27 +111,6 @@ namespace WpfNastolSystem.Forms.Edit
             }
         }
 
-        private void InsertRole(Dictionary<string, object> parameters)
-        {
-            string query = @"INSERT INTO roles 
-                (code, name, description)
-                VALUES 
-                (@code, @name, @description)";
-
-            new DbManager().NonQuery(query, parameters);
-        }
-
-        private void UpdateRole(Dictionary<string, object> parameters)
-        {
-            string query = @"UPDATE roles SET
-                code = @code,
-                name = @name,
-                description = @description
-                WHERE role_id = @role_id";
-
-            new DbManager().NonQuery(query, parameters);
-        }
-
         private bool TryValidate(out Dictionary<string, object> parameters)
         {
             parameters = new Dictionary<string, object>();
@@ -115,47 +118,31 @@ namespace WpfNastolSystem.Forms.Edit
             if (string.IsNullOrWhiteSpace(CodeTextBox.Text))
                 return Fail("Введите код роли", CodeTextBox);
 
-            // Проверка длины code (VARCHAR(50))
-            if (CodeTextBox.Text.Trim().Length > 50)
+            string code = CodeTextBox.Text.Trim();
+            if (code.Length > 50)
                 return Fail("Код роли не может быть длиннее 50 символов", CodeTextBox);
 
-            if (!IsCodeUnique(CodeTextBox.Text.Trim(), _roleId))
+            if (!_db.IsRoleCodeUnique(code, _roleId))
                 return Fail("Роль с таким кодом уже существует", CodeTextBox);
 
             if (string.IsNullOrWhiteSpace(NameTextBox.Text))
                 return Fail("Введите название роли", NameTextBox);
 
-            // Проверка длины name (VARCHAR(100))
-            if (NameTextBox.Text.Trim().Length > 100)
+            string name = NameTextBox.Text.Trim();
+            if (name.Length > 100)
                 return Fail("Название роли не может быть длиннее 100 символов", NameTextBox);
 
-            // Проверка длины description (VARCHAR(250))
-            if (!string.IsNullOrWhiteSpace(DescriptionTextBox.Text) &&
-                DescriptionTextBox.Text.Trim().Length > 250)
-                return Fail("Описание не может быть длиннее 250 символов", DescriptionTextBox);
+            if (!_db.IsRoleNameUnique(name, _roleId))
+                return Fail("Роль с таким названием уже существует", NameTextBox);
 
             parameters = new Dictionary<string, object>
             {
-                ["@code"] = CodeTextBox.Text.Trim().ToUpper(),
-                ["@name"] = NameTextBox.Text.Trim(),
-                ["@description"] = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
-                    ? DBNull.Value : DescriptionTextBox.Text.Trim()
+                ["@code"] = code,
+                ["@name"] = name,
+                ["@description"] = string.IsNullOrWhiteSpace(DescriptionTextBox.Text) ? DBNull.Value : DescriptionTextBox.Text.Trim()
             };
 
             return true;
-        }
-
-        private bool IsCodeUnique(string code, int? excludeRoleId)
-        {
-            string query = @"SELECT COUNT(*) FROM roles WHERE code = @code" +
-                          (excludeRoleId.HasValue ? " AND role_id != @role_id" : "");
-
-            var parameters = new Dictionary<string, object> { { "@code", code } };
-            if (excludeRoleId.HasValue)
-                parameters["@role_id"] = excludeRoleId.Value;
-
-            object result = new DbManager().Scalar(query, parameters);
-            return Convert.ToInt32(result) == 0;
         }
 
         private bool Fail(string message, UIElement element)
@@ -179,6 +166,18 @@ namespace WpfNastolSystem.Forms.Edit
         private void ShowInfo(string message)
         {
             MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (_isDataChanged && DialogResult != true)
+            {
+                var result = MessageBox.Show("Изменения не сохранены. Закрыть?", "Подтверждение",
+                                              MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (result != MessageBoxResult.Yes)
+                    e.Cancel = true;
+            }
+            base.OnClosing(e);
         }
     }
 }

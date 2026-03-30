@@ -46,7 +46,7 @@
                     <TextBox x:Name="PhoneTextBox"
                              Padding="16,12,16,0" FontSize="15" Background="Transparent"
                              BorderThickness="0" VerticalContentAlignment="Bottom"
-                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20" Height="52" VerticalAlignment="Top"/>
+                             CaretBrush="{StaticResource PrimaryBlue}" MaxLength="20" Height="52" VerticalAlignment="Top" TextChanged="PhoneTextBox_TextChanged"/>
                 </Grid>
 
                 <!-- Email -->
