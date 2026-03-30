@@ -39,8 +39,8 @@ namespace WpfNastolSystem.Windows
             INNER JOIN tables t ON s.table_id = t.table_id
             LEFT JOIN persons p ON s.organizer_id = p.person_id
             LEFT JOIN session_games sg ON sg.session_id = s.session_id
-            LEFT JOIN game_copies gc ON gc.copy_id = sg.copy_id AND gc.is_active = 1
-            LEFT JOIN games g ON g.game_id = gc.game_id AND g.is_active = 1
+            LEFT JOIN game_copies gc ON gc.copy_id = sg.copy_id
+            LEFT JOIN games g ON g.game_id = gc.game_id 
             WHERE s.ended_at IS NOT NULL 
               AND (s.paid = 0 OR s.paid IS NULL)
               AND s.is_active = 1

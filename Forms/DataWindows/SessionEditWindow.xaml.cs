@@ -432,6 +432,7 @@ namespace WpfNastolSystem.Forms.Edit
             if (!ValidateAndCollectData(out var parameters, out var participantIds))
                 return;
 
+
             try
             {
                 int targetSessionId;
@@ -471,19 +472,27 @@ namespace WpfNastolSystem.Forms.Edit
             parameters = null;
             participantPersonIds = null;
 
-            if (cmbOrganizer.SelectedValue == null)
-            {
-                MessageBox.Show("Выберите организатора", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
-                cmbOrganizer.Focus();
-                return false;
-            }
-
             if (cmbTable.SelectedValue == null)
             {
                 MessageBox.Show("Выберите стол", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Warning);
                 cmbTable.Focus();
+                return false;
+            }
+
+            if (!_selectedCopyId.HasValue)
+            {
+                MessageBox.Show("Выберите игру", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                cmbGame.Focus();
+                return false;
+            }
+
+            if (cmbOrganizer.SelectedValue == null)
+            {
+                MessageBox.Show("Выберите организатора", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                cmbOrganizer.Focus();
                 return false;
             }
 

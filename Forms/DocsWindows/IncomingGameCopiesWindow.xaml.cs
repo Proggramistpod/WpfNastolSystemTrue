@@ -54,7 +54,6 @@ namespace WpfNastolSystem.Windows
         FROM game_copies gc
         JOIN games g ON g.game_id = gc.game_id
         WHERE DATE(gc.acquired_date) = @date
-          AND gc.is_active = 1
           AND g.is_active = 1
         ORDER BY g.title";
 
