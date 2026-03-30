@@ -5,7 +5,7 @@
         Height="634" Width="500"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="#EEF6FF" Icon="/images.ico">
+        Background="#EEF6FF" Icon="images.ico">
 
     <Grid Margin="24">
         <Grid.RowDefinitions>

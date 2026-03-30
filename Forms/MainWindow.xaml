@@ -4,8 +4,8 @@
         Title="Вход в систему"
         Height="520"
         Width="900"
-        WindowStartupLocation="CenterScreen"
-        Background="#EEF6FF" Icon="/images.ico">
+        Background="#EEF6FF" 
+        Icon="/images.ico">
     <Grid>
         <Border Style="{StaticResource PanelStyle}"
                 Width="420"
