@@ -176,6 +176,8 @@ namespace WpfNastolSystem.Forms.Edit
                 return ShowWarning("Дата рождения не может быть в будущем", BirthDatePicker);
             if (BirthDatePicker.SelectedDate.Value < DateTime.Now.AddYears(-120))
                 return ShowWarning("Некорректная дата рождения", BirthDatePicker);
+            if (BirthDatePicker.SelectedDate.Value > DateTime.Now.AddYears(-10))
+                return ShowWarning("Пользователь должен быть не моложе 10 лет", BirthDatePicker);
 
             return true;
         }

@@ -250,6 +250,8 @@
                     return ShowWarning("Дата рождения не может быть в будущем", BirthDatePicker);
                 if (BirthDatePicker.SelectedDate.Value < DateTime.Now.AddYears(-120))
                     return ShowWarning("Некорректная дата рождения", BirthDatePicker);
+                if (BirthDatePicker.SelectedDate.Value > DateTime.Now.AddYears(-16))
+                    return ShowWarning("Пользователь должен быть не моложе 16 лет", BirthDatePicker);
 
                 // Логин
                 if (string.IsNullOrWhiteSpace(LoginTextBox.Text))
