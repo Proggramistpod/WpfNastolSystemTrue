@@ -232,20 +232,20 @@ namespace WpfNastolSystem.Moduls.DB
         public DataTable GetSessionsForGrid()
         {
             string query = @"
-        SELECT
-            s.session_id,
-            p.full_name AS organizer_name,
-            t.table_number,
-            s.started_at,
-            s.ended_at,
-            s.cost,
-            IF(s.paid = 1, 'Да', 'Нет') AS paid,
-            s.payment_method,
-            s.notes
-        FROM sessions s
-        LEFT JOIN persons p ON s.organizer_id = p.person_id
-        LEFT JOIN tables t ON s.table_id = t.table_id
-        WHERE s.is_active = 1";
+            SELECT
+                s.session_id,
+                p.full_name AS organizer_name,
+                t.table_number,
+                DATE_FORMAT(s.started_at, '%d.%m.%Y %H:%i') AS started_at,
+                DATE_FORMAT(s.ended_at, '%d.%m.%Y %H:%i') AS ended_at,
+                s.cost,
+                IF(s.paid = 1, 'Да', 'Нет') AS paid,
+                s.payment_method,
+                s.notes
+            FROM sessions s
+            LEFT JOIN persons p ON s.organizer_id = p.person_id
+            LEFT JOIN tables t ON s.table_id = t.table_id
+            WHERE s.is_active = 1";
 
             if (DataCurrentUser.IsGameMaster && DataCurrentUser.PersonId.HasValue)
             {

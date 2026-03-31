@@ -152,6 +152,7 @@ namespace WpfNastolSystem.Forms.List
                 }
                 DataGrid.ItemsSource = _currentData.DefaultView;
                 GenerateColumns(_currentData);
+                ApplyFilter(SearchTextBox.Text);
             }
             catch (Exception ex)
             {
@@ -207,7 +208,7 @@ namespace WpfNastolSystem.Forms.List
                 "tables" => new() { "Все", "Занятые", "Свободные" },
                 "accounts" => new() { "Все", "Активные", "Заблокированные" },
                 "roles" => new() { "Все" },
-                "publishers" => new() { "Все" }, // добавлено
+                "publishers" => new() { "Все" }, 
                 _ => new() { "Все" }
             };
 
@@ -517,56 +518,56 @@ namespace WpfNastolSystem.Forms.List
             column switch
             {
                 // Games
-                "title" => "Название",
-                "publish_year" => "Год выпуска",
-                "publisher" => "Издатель",
-                "min_players" => "Мин. игроков",
-                "max_players" => "Макс. игроков",
-                "play_time_min" => "Время (мин)",
-                "age_rating" => "Возраст",
-                "bgg_rating" => "Рейтинг BGG",
-                "is_active" => "Активна",
-                "description" => "Описание",
+                "title" => "Название  ",
+                "publish_year" => "Год выпуска  ",
+                "publisher" => "Издатель  ",
+                "min_players" => "Мин. игроков  ",
+                "max_players" => "Макс. игроков  ",
+                "play_time_min" => "Время (мин)  ",
+                "age_rating" => "Возраст  ",
+                "bgg_rating" => "Рейтинг BGG  ",
+                "is_active" => "Активна  ",
+                "description" => "Описание  ",
 
                 // Persons
-                "full_name" => "ФИО",
-                "role_name" => "Роль",
-                "phone" => "Телефон",
-                "email" => "Email",
-                "birth_date" => "Дата рождения",
-                "is_banned" => "Заблокирован",
-                "notes" => "Примечания",
+                "full_name" => "ФИО  ",
+                "role_name" => "Роль  ",
+                "phone" => "Телефон  ",
+                "email" => "Email  ",
+                "birth_date" => "Дата рождения  ",
+                "is_banned" => "Заблокирован  ",
+                "notes" => "Примечания  ",
 
                 // Sessions
-                "organizer_name" => "Организатор",
-                "table_number" => "Стол",
-                "game_title" => "Игра",
-                "started_at" => "Начало",
-                "ended_at" => "Окончание",
-                "comment" => "Комментарий",
-                "paid" => "Оплачено",
-                "cost" => "Заплатить",
-                "payment_method" => "Способ оплаты",
+                "organizer_name" => "Организатор  ",
+                "table_number" => "Стол  ",
+                "game_title" => "Игра  ",
+                "started_at" => "Начало  ",
+                "ended_at" => "Окончание  ",
+                "comment" => "Комментарий  ",
+                "paid" => "Оплачено  ",
+                "cost" => "Заплатить  ",
+                "payment_method" => "Способ оплаты  ",
 
                 // Categories
-                "name" => "Название",
+                "name" => "Название ",
 
                 // Game copies
-                "inventory_number" => "Инв. номер",
-                "acquired_date" => "Дата приобретения",
-                "Condition" => "Состояние",
-                "location" => "Расположение",
-                "is_available" => "Доступность",
+                "inventory_number" => "Инв. номер  ",
+                "acquired_date" => "Дата приобретения  ",
+                "Condition" => "Состояние  ",
+                "location" => "Расположение  ",
+                "is_available" => "Доступность  ",
 
                 // Tables
-                "capacity" => "Вместимость",
-                "zone" => "Зона",
+                "capacity" => "Вместимость  ",
+                "zone" => "Зона  ",
 
                 // Accounts
-                "login" => "Логин",
-                "person_name" => "Владелец",
+                "login" => "Логин  ",
+                "person_name" => "Владелец  ",
 
-                "code" => "Код",
+                "code" => "Код  ",
 
 
                 _ => column
